@@ -1,0 +1,32 @@
+@use 'tokens' as *;
+@use 'sass:map';
+
+@mixin container {
+  width: 100%;
+  max-width: 88rem;
+  margin-inline: auto;
+  padding-inline: map.get($space, 'gutter');
+}
+
+// Hover só em dispositivos com ponteiro de verdade (evita "hover grudado" no touch).
+@mixin hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @content;
+    }
+  }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+@mixin eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}

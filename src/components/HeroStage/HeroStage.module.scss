@@ -1,0 +1,15 @@
+// Palco da transição: o hero fica pinado aqui enquanto vira preto.
+.stage {
+  position: relative;
+  background: var(--black);
+}
+
+// Fallback (reduced motion): corte suave branco → preto, sem gota.
+.stage__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--black);
+  opacity: 0;
+  pointer-events: none;
+}

@@ -1,0 +1,59 @@
+@use 'sass:map';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+
+.about {
+  position: relative;
+  overflow: hidden; // máscara da entrada por baixo
+  padding-block: map.get($space, 'section');
+  background: var(--black);
+  color: var(--white);
+}
+
+.about__inner {
+  @include container;
+}
+
+.about__eyebrow {
+  @include eyebrow;
+  margin-bottom: 2.5rem;
+  color: var(--muted);
+}
+
+.about__text {
+  max-width: 22ch;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(2rem, 5.6vw, 5.25rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.about__word {
+  display: inline-block;
+  white-space: pre;
+}
+
+.about__letter {
+  display: inline-block;
+}
+
+// Onda contínua nas letras (só transform). A classe entra/sai com a seção na viewport.
+.about--waving .about__letter {
+  animation: about-wave 3.2s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.045s);
+
+  @include reduced-motion {
+    animation: none;
+  }
+}
+
+@keyframes about-wave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.06em);
+  }
+}

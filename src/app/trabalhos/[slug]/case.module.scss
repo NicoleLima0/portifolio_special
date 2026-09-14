@@ -1,0 +1,60 @@
+@use 'sass:map';
+@use '../../../styles/tokens' as *;
+@use '../../../styles/mixins' as *;
+
+.case {
+  @include container;
+  min-height: 100svh;
+  padding-top: calc(env(safe-area-inset-top) + clamp(1.5rem, 4vw, 3rem));
+  padding-bottom: map.get($space, 'section');
+  background: var(--black);
+  color: var(--white);
+}
+
+.case__back {
+  @include eyebrow;
+  display: inline-block;
+  margin-bottom: clamp(3rem, 10vw, 7rem);
+  color: var(--muted);
+}
+
+.case__meta {
+  @include eyebrow;
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.case__title {
+  max-width: 14ch;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(2.75rem, 9vw, 8.5rem);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+}
+
+.case__summary {
+  max-width: 42ch;
+  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: clamp(1.05rem, 1.6vw, 1.4rem);
+}
+
+.case__cover {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #111;
+
+  img {
+    object-fit: cover;
+  }
+}
+
+.case__note {
+  @include eyebrow;
+  margin-top: 2rem;
+  color: var(--muted);
+}

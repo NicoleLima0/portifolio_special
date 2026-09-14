@@ -1,0 +1,20 @@
+.heading {
+  font-family: var(--font-heading), sans-serif;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+// Máscara por palavra: a palavra sobe "de dentro" da linha.
+.heading__mask {
+  display: inline-block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+  vertical-align: top;
+}
+
+.heading__word {
+  display: inline-block;
+  transform-origin: 0% 100%;
+}

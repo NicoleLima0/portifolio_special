@@ -1,0 +1,237 @@
+@use 'sass:map';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+@use '../../styles/breakpoints' as bp;
+
+$hover: '(hover: hover) and (pointer: fine)';
+$iridescent: linear-gradient(100deg, #3f2bd0 0%, #a668ff 30%, #ff2e97 55%, #38e8ff 80%, #3f2bd0 100%);
+
+.services {
+  position: relative;
+  padding-block: map.get($space, 'section');
+  background: var(--black);
+  color: var(--white);
+}
+
+.services__head,
+.services__list {
+  @include container;
+}
+
+.services__head {
+  margin-bottom: clamp(2.5rem, 6vw, 5rem);
+}
+
+.services__eyebrow {
+  @include eyebrow;
+  margin-bottom: 1.25rem;
+  color: var(--muted);
+}
+
+.services__title {
+  max-width: 12ch;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(2.75rem, 8.5vw, 8rem);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+}
+
+.services__mask {
+  display: inline-block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+  vertical-align: top;
+}
+
+.services__reveal {
+  display: inline-block;
+}
+
+.service {
+  border-top: 1px solid var(--line-strong);
+  transition: opacity 0.45s $ease-out;
+
+  &:last-child {
+    border-bottom: 1px solid var(--line-strong);
+  }
+}
+
+.service__heading {
+  margin: 0;
+  font: inherit;
+}
+
+.service__trigger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem clamp(1rem, 3vw, 3rem);
+  width: 100%;
+  padding: clamp(1.5rem, 3.2vw, 3rem) 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+// Índice grande: contorno em repouso, iridescente quando aberto (acento pontual).
+.service__index {
+  min-width: 2ch;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(2.5rem, 8vw, 7.5rem);
+  font-weight: 800;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.55);
+  background: $iridescent;
+  background-size: 300% 100%;
+  background-position: calc(var(--phase) * 100%) 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  transition: -webkit-text-stroke-color 0.5s $ease-out;
+
+  .service--open & {
+    -webkit-text-stroke-color: transparent;
+  }
+
+  // sem o gradiente visível em repouso: só aparece quando o contorno some
+  .service:not(.service--open) & {
+    background-image: none;
+  }
+}
+
+.service__mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+}
+
+.service__title {
+  display: inline-block;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.6rem, 4.8vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  transition: transform 0.7s $ease-out;
+
+  .service--open & {
+    transform: translateX(clamp(0.5rem, 1.6vw, 1.75rem));
+  }
+}
+
+// + que vira ×
+.service__icon {
+  position: relative;
+  width: clamp(1.25rem, 2.4vw, 2rem);
+  aspect-ratio: 1;
+  transition: transform 0.6s $ease-out;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    margin-top: -1px;
+    background: currentColor;
+  }
+
+  &::after {
+    transform: rotate(90deg);
+  }
+
+  .service--open & {
+    transform: rotate(135deg);
+  }
+}
+
+// Expansão sem medir altura: grid 0fr → 1fr.
+.service__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.7s $ease-out;
+
+  .service--open & {
+    grid-template-rows: 1fr;
+  }
+}
+
+.service__panel-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.service__body {
+  display: grid;
+  gap: 1.5rem;
+  padding-bottom: clamp(1.75rem, 3.5vw, 3.25rem);
+
+  @include bp.up('md') {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    padding-left: calc(2ch + clamp(1rem, 3vw, 3rem));
+    column-gap: clamp(2rem, 5vw, 5rem);
+  }
+}
+
+.service__text {
+  max-width: 42ch;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+  line-height: 1.5;
+}
+
+.service__items {
+  display: grid;
+  gap: 0.65rem;
+  align-content: start;
+
+  li {
+    @include eyebrow;
+    display: flex;
+    gap: 0.75rem;
+    color: var(--muted);
+
+    &::before {
+      content: '↳';
+    }
+  }
+}
+
+// Touch: sem cursor para o preview flutuante → faixa iridescente inline, visível.
+.service__swatch {
+  grid-column: 1 / -1;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: $iridescent;
+  background-size: 300% 100%;
+  background-position: calc(var(--phase) * 100%) 0;
+}
+
+@media #{$hover} {
+  .service__swatch {
+    display: none; // o preview WebGL segue o cursor
+  }
+
+  .services__list:hover .service:not(.service--open) {
+    opacity: 0.4;
+  }
+}
+
+@include reduced-motion {
+  .service,
+  .service__panel,
+  .service__title,
+  .service__icon,
+  .service__index {
+    transition: none;
+  }
+}

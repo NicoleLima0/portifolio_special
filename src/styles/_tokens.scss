@@ -1,0 +1,40 @@
+// Tokens do projeto. Só variáveis (nenhum CSS gerado) — pode ser @use'd em qualquer módulo.
+// As custom properties equivalentes são emitidas uma única vez em app/globals.scss.
+
+$colors: (
+  'white': #ffffff,
+  'ink-black': #0a0a0a,
+  'magenta': #ff2e97,
+  'violet': #a668ff,
+  'cyan': #38e8ff,
+  'chrome-2': #ffc2ec,
+  'bg-deep': #0b0612,
+  'bg-card': #140c20,
+  'ink': #f3ecff,
+  'ink-soft': #b9a6d6,
+  'ink-lit': #f6f0ff,
+  'ink-dim': rgba(185, 166, 214, 0.2),
+  'line': rgba(243, 236, 255, 0.1),
+  // Seções internas (preto + branco; iridescência só como acento)
+  'black': #000000,
+  'muted': rgba(255, 255, 255, 0.62),
+  'line-strong': rgba(255, 255, 255, 0.16),
+);
+
+$fonts: (
+  'display': var(--font-display),
+  'heading': var(--font-heading),
+  'body': var(--font-body),
+);
+
+$space: (
+  'gutter': clamp(1rem, 3.2vw, 2.5rem),
+  'section': clamp(6rem, 14vw, 11rem),
+);
+
+$radius: (
+  'pill': 999px,
+  'card': 1.5rem,
+);
+
+$ease-out: cubic-bezier(0.22, 1, 0.36, 1);
