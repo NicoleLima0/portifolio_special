@@ -10,7 +10,7 @@ $hover: '(hover: hover) and (pointer: fine)';
   padding-block: map.get($space, 'section');
   background: var(--black);
   color: var(--white);
-  overflow-x: clip;
+  overflow-x: clip; // o parallax empurra as figuras para fora: nunca vira scroll lateral
 }
 
 .works__head {
@@ -31,10 +31,10 @@ $hover: '(hover: hover) and (pointer: fine)';
 
 .works__title {
   font-family: var(--font-heading), sans-serif;
-  font-size: clamp(2.75rem, 9.5vw, 9rem);
+  font-size: clamp(2.25rem, 6vw, 5rem);
   font-weight: 800;
-  line-height: 0.92;
-  letter-spacing: -0.045em;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
 }
 
 .works__mask {
@@ -54,159 +54,223 @@ $hover: '(hover: hover) and (pointer: fine)';
   color: var(--muted);
 }
 
-.works__list {
+.works__body {
   @include container;
-  transform-origin: 50% 0;
-}
 
-.work {
-  border-top: 1px solid var(--line-strong);
-
-  &:last-child {
-    border-bottom: 1px solid var(--line-strong);
+  @include bp.up('lg') {
+    display: grid;
+    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
+    column-gap: clamp(2rem, 5vw, 5rem);
+    align-items: start;
   }
 }
 
-// ---- Base (touch / sem hover): lista vertical com thumbnail inline ----
-.work__link {
+// Frase-destaque: acompanha os projetos passando (sticky só onde há espaço).
+.works__aside {
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+
+  @include bp.up('lg') {
+    position: sticky;
+    top: clamp(4rem, 18vh, 9rem);
+    margin-bottom: 0;
+  }
+}
+
+.works__quote {
+  max-width: 18ch;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.6rem, 3.6vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.works__quote-em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+// ---- Grid desencontrado ----
+.works__grid {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas:
-    'media media media'
-    'index tag year'
-    'title title title';
-  align-items: center;
-  gap: 0.9rem 1rem;
-  padding-block: 1.75rem;
-  color: inherit;
+  gap: clamp(3rem, 8vw, 7rem) clamp(1.5rem, 3vw, 3rem);
 
   @include bp.up('md') {
-    grid-template-columns: minmax(0, 0.8fr) auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'media index tag year'
-      'media title title title';
-    column-gap: clamp(1.25rem, 3vw, 2.5rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
   }
 }
 
-.work__media {
-  grid-area: media;
-  position: relative;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  border-radius: 0.9rem;
-  background: #111;
+// A coluna da direita começa mais para baixo: ritmo vertical, nunca linhas alinhadas.
+.work {
+  @include bp.up('md') {
+    &:nth-child(even) {
+      margin-top: clamp(4rem, 12vw, 11rem);
+    }
+  }
 }
 
-.work__img {
-  object-fit: cover;
+.work__link {
+  display: grid;
+  gap: 0.85rem;
+  color: inherit;
 }
 
-.work__index,
-.work__tag,
-.work__year {
+.work__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.work__label,
+.work__year,
+.work__tag {
   @include eyebrow;
   color: var(--muted);
 }
 
-.work__index {
-  grid-area: index;
-}
-
-.work__tag {
-  grid-area: tag;
-}
-
-.work__year {
-  grid-area: year;
-  justify-self: end;
-}
-
 .work__mask {
-  grid-area: title;
   display: block;
   overflow: hidden;
-  padding-bottom: 0.1em;
-  margin-bottom: -0.1em;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+
+.work__headline {
+  display: inline-block;
+  max-width: 20ch;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.35rem, 2.6vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  transition: transform 0.7s $ease-out;
+}
+
+// A figura é quem recebe parallax e skew (GSAP escreve y/skewY aqui).
+// O parallax move a figura ±28px (DRIFT em Works.tsx); a folga abaixo da headline é maior
+// que esse curso, então a imagem nunca encosta no texto — sem margem negativa, sem truque.
+.work__figure {
+  position: relative;
+  display: block;
+  margin-top: 0.35rem;
+  will-change: transform;
+
+  @include bp.up('md') {
+    margin-top: clamp(2.5rem, 4vw, 3.5rem);
+  }
+}
+
+.work__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background: #111; // placeholder enquanto a imagem carrega
+  // Tilt 3D sutil conforme o cursor (--mx/--my escritos no pointermove).
+  transform: perspective(900px) rotateX(calc(var(--my, 0) * -3deg))
+    rotateY(calc(var(--mx, 0) * 4deg));
+  transition: transform 0.6s $ease-out;
+
+  @include bp.up('md') {
+    aspect-ratio: 5 / 4;
+  }
+}
+
+.work__img {
+  object-fit: cover;
+  // Parallax interno: a imagem é maior que a moldura e desliza com o cursor.
+  transform: scale(1.06) translate3d(calc(var(--mx, 0) * -14px), calc(var(--my, 0) * -14px), 0);
+  transition: transform 0.6s $ease-out;
+}
+
+.work__cta {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 0.7rem 1.2rem;
+  border-radius: map.get($radius, 'pill');
+  background: var(--white);
+  color: var(--black);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  // Segue o cursor de leve (magnético) e cresce ao entrar.
+  transform: translate3d(calc(-50% + var(--mx, 0) * 60px), calc(-50% + var(--my, 0) * 40px), 0)
+    scale(0.86);
+  transition:
+    opacity 0.45s $ease-out,
+    transform 0.55s $ease-out;
+  pointer-events: none;
+}
+
+.work__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  padding-top: 0.2rem;
 }
 
 .work__title {
-  display: inline-block;
   font-family: var(--font-heading), sans-serif;
-  font-size: clamp(1.9rem, 6.2vw, 6rem);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.035em;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.work__arrow {
-  display: none;
-}
-
-// ---- Com mouse: linhas editoriais grandes; a imagem vira o thumbnail flutuante (WebGL) ----
+// ---- Hover: só em ponteiro fino; no touch a imagem aparece normal e o tap abre o case ----
 @media #{$hover} {
-  .work__link {
-    grid-template-columns: 3.5rem minmax(0, 1fr) auto;
-    grid-template-areas:
-      'index title arrow'
-      'index tag year';
-    row-gap: 0.4rem;
-    padding-block: clamp(1.4rem, 2.4vw, 2.6rem);
-    transition: opacity 0.45s $ease-out;
-
-    @include bp.up('lg') {
-      grid-template-columns: 5rem minmax(0, 1fr) 14rem 4.5rem 2.5rem;
-      grid-template-areas: 'index title tag year arrow';
-    }
-  }
-
-  .work__media {
-    display: none;
-  }
-
-  .work__year {
-    justify-self: start;
-
-    @include bp.up('lg') {
-      justify-self: end;
-    }
-  }
-
-  .work__title {
-    transition: transform 0.7s $ease-out;
-  }
-
-  .work__arrow {
-    grid-area: arrow;
-    display: block;
-    justify-self: end;
-    font-size: clamp(1.25rem, 2vw, 2rem);
-    transition: transform 0.6s $ease-out;
-  }
-
-  // Foco no item: os outros apagam.
-  .works__list:hover .work__link {
-    opacity: 0.28;
-  }
-
-  .works__list .work__link:hover,
-  .works__list .work__link:focus-visible {
-    opacity: 1;
-
-    .work__title {
-      transform: translateX(clamp(0.75rem, 1.6vw, 1.75rem));
+  .work__link:hover,
+  .work__link:focus-visible {
+    .work__media {
+      transform: perspective(900px) rotateX(calc(var(--my, 0) * -3deg))
+        rotateY(calc(var(--mx, 0) * 4deg)) scale(1.04);
     }
 
-    .work__arrow {
-      transform: rotate(45deg);
+    .work__img {
+      transform: scale(1.12) translate3d(calc(var(--mx, 0) * -22px), calc(var(--my, 0) * -22px), 0);
+    }
+
+    .work__cta {
+      opacity: 1;
+      transform: translate3d(calc(-50% + var(--mx, 0) * 60px), calc(-50% + var(--my, 0) * 40px), 0)
+        scale(1);
+    }
+
+    .work__headline {
+      transform: translateX(clamp(0.4rem, 1vw, 0.9rem));
     }
   }
 }
 
+// ---- Mobile / reduced motion: uma coluna simples, sem efeito pesado ----
 @include reduced-motion {
-  .work__link,
-  .work__title,
-  .work__arrow {
+  .work {
+    margin-top: 0; // sem desencontro: entrada simples, leitura linear
+  }
+
+  .work__figure {
+    will-change: auto;
+  }
+
+  .work__media,
+  .work__img,
+  .work__cta,
+  .work__headline {
+    transform: none;
     transition: none;
+  }
+
+  .work__img {
+    transform: scale(1.01); // evita fresta na borda do cover
   }
 }

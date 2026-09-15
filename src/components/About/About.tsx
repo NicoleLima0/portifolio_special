@@ -17,13 +17,16 @@ export default function About() {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {
         // Entra por baixo, recortada pela própria seção (máscara), amarrada ao scroll.
+        // Começa ANTES da seção chegar na tela (start: 'top 130%'): enquanto o hero ainda está
+        // pinado terminando a gota, o texto já está subindo por cima do preto — sem beat vazio
+        // esperando a transição fechar 100%.
         gsap.fromTo(
           '[data-about-inner]',
           { yPercent: 35 },
           {
             yPercent: 0,
             ease: 'none',
-            scrollTrigger: { trigger: rootRef.current, start: 'top bottom', end: 'top 20%', scrub: true },
+            scrollTrigger: { trigger: rootRef.current, start: 'top 130%', end: 'top 20%', scrub: true },
           },
         );
 
@@ -44,10 +47,12 @@ export default function About() {
             color: '#ffffff',
             ease: 'none',
             stagger: 0.1,
+            // Acende junto com a entrada (era 'top 80%'): o texto já chega aceso em vez de
+            // aparecer apagado e só acender bem depois.
             scrollTrigger: {
               trigger: '[data-about-text]',
-              start: 'top 80%',
-              end: 'bottom 55%',
+              start: 'top 95%',
+              end: 'bottom 60%',
               scrub: true,
             },
           },

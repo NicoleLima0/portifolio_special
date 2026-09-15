@@ -1,60 +1,347 @@
 @use 'sass:map';
 @use '../../../styles/tokens' as *;
 @use '../../../styles/mixins' as *;
+@use '../../../styles/breakpoints' as bp;
 
 .case {
-  @include container;
-  min-height: 100svh;
-  padding-top: calc(env(safe-area-inset-top) + clamp(1.5rem, 4vw, 3rem));
-  padding-bottom: map.get($space, 'section');
   background: var(--black);
   color: var(--white);
+  // O parallax empurra as figuras: nunca vira scroll lateral.
+  overflow-x: clip;
+}
+
+// ---------------------------------------------------------------- cabeçalho
+.case__head {
+  @include container;
+  padding-top: calc(env(safe-area-inset-top) + clamp(1.5rem, 4vw, 3rem));
+  padding-bottom: clamp(2rem, 5vw, 4rem);
 }
 
 .case__back {
   @include eyebrow;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
   margin-bottom: clamp(3rem, 10vw, 7rem);
   color: var(--muted);
+  transition: color 0.3s $ease-out;
+
+  @include hover {
+    color: var(--white);
+
+    .case__back-arrow {
+      transform: translateX(-0.35em);
+    }
+  }
 }
 
-.case__meta {
-  @include eyebrow;
-  margin-bottom: 1rem;
-  color: var(--muted);
+.case__back-arrow {
+  display: inline-block;
+  transition: transform 0.4s $ease-out;
+
+  @include reduced-motion {
+    transition: none;
+  }
 }
 
 .case__title {
   max-width: 14ch;
-  margin-bottom: 1.5rem;
+  margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
   font-family: var(--font-heading), sans-serif;
   font-size: clamp(2.75rem, 9vw, 8.5rem);
   font-weight: 800;
   line-height: 0.92;
   letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+// Máscara: o título sobe de dentro da linha (mesmo idioma do resto do site).
+.case__mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+.case__rise {
+  display: block;
+}
+
+// Metadados em linha: número · ano · cliente · disciplinas
+.case__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  padding-top: clamp(1.25rem, 2.5vw, 2rem);
+  border-top: 1px solid var(--line-strong);
+}
+
+.case__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.case__meta-label {
+  @include eyebrow;
+  color: var(--muted);
+}
+
+.case__meta-value {
+  font-family: var(--font-body);
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  font-weight: 500;
 }
 
 .case__summary {
-  max-width: 42ch;
-  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+  max-width: 46ch;
+  margin-top: clamp(2rem, 4vw, 3rem);
   color: rgba(255, 255, 255, 0.8);
   font-size: clamp(1.05rem, 1.6vw, 1.4rem);
+  line-height: 1.5;
 }
 
+// ---------------------------------------------------------------- capa
 .case__cover {
   position: relative;
+  width: 100%;
+  // A capa é o alvo do morph vindo do card da home.
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  border-radius: 1rem;
-  background: #111;
+  background: #111; // placeholder enquanto a imagem carrega
 
   img {
     object-fit: cover;
   }
 }
 
-.case__note {
+// ---------------------------------------------------------------- conceito
+.case__concept {
+  @include container;
+  padding-block: map.get($space, 'section');
+
+  @include bp.up('lg') {
+    display: grid;
+    grid-template-columns: minmax(0, 0.38fr) minmax(0, 1fr);
+    column-gap: clamp(2rem, 5vw, 5rem);
+    align-items: start;
+  }
+}
+
+.case__label {
   @include eyebrow;
-  margin-top: 2rem;
+  margin-bottom: 1.5rem;
   color: var(--muted);
+
+  @include bp.up('lg') {
+    margin-bottom: 0;
+  }
+}
+
+.case__concept-body {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 54ch;
+}
+
+.case__paragraph {
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.25rem, 2.4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+
+  // O segundo parágrafo recua de tom: o primeiro é o desafio, este é a solução.
+  & + & {
+    color: rgba(255, 255, 255, 0.72);
+  }
+}
+
+// ---------------------------------------------------------------- métricas
+.case__metrics {
+  @include container;
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  padding-bottom: map.get($space, 'section');
+
+  @include bp.up('md') {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+}
+
+.case__metric {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line-strong);
+}
+
+.case__metric-value {
+  display: block;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.case__metric-label {
+  @include eyebrow;
+  display: block;
+  margin-top: 0.75rem;
+  color: var(--muted);
+}
+
+// ---------------------------------------------------------------- créditos
+.case__credits {
+  @include container;
+  display: grid;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  padding-bottom: map.get($space, 'section');
+
+  @include bp.up('md') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.case__credit-value {
+  margin-top: 0.75rem;
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  line-height: 1.5;
+}
+
+.case__live {
+  @include bp.up('md') {
+    grid-column: 1 / -1;
+  }
+
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 0.6em;
+  padding: 1em 1.6em;
+  border-radius: map.get($radius, 'pill');
+  background: var(--white);
+  color: var(--black);
+  font-size: 1.0625rem;
+  font-weight: 600;
+
+  @include hover {
+    .case__live-arrow {
+      transform: translate(0.3em, -0.3em);
+    }
+  }
+}
+
+.case__live-arrow {
+  display: inline-block;
+  transition: transform 0.4s $ease-out;
+
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+// ---------------------------------------------------------------- próximo projeto
+.case__next {
+  position: relative;
+  display: block;
+  padding-block: clamp(3.5rem, 9vw, 7rem);
+  border-top: 1px solid var(--line-strong);
+  color: inherit;
+  overflow: hidden;
+
+  @include hover {
+    .case__next-title {
+      transform: translateX(clamp(0.5rem, 1.5vw, 1.25rem));
+    }
+
+    .case__next-media img {
+      transform: scale(1.06);
+    }
+  }
+
+  &:focus-visible {
+    outline-offset: -4px;
+  }
+}
+
+.case__next-inner {
+  @include container;
+  display: grid;
+  gap: 1.5rem clamp(2rem, 5vw, 4rem);
+  align-items: center;
+
+  @include bp.up('md') {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.32fr);
+  }
+}
+
+.case__next-label {
+  @include eyebrow;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
+  color: var(--muted);
+}
+
+.case__next-title {
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(2rem, 7vw, 5.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  transition: transform 0.7s $ease-out;
+
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+.case__next-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background: #111;
+
+  img {
+    object-fit: cover;
+    transition: transform 0.7s $ease-out;
+  }
+
+  @include reduced-motion {
+    img {
+      transition: none;
+    }
+  }
+}
+
+// Ordem visual no mobile: a imagem acompanha o título, não o empurra para baixo da dobra.
+@media (max-width: 767px) {
+  .case__next-media {
+    order: -1;
+  }
+}
+
+.case__all {
+  @include container;
+  display: flex;
+  padding-bottom: clamp(3rem, 7vw, 5rem);
+}
+
+.case__all-link {
+  @include eyebrow;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  color: var(--muted);
+  transition: color 0.3s $ease-out;
+
+  @include hover {
+    color: var(--white);
+  }
 }

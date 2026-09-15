@@ -1,9 +1,11 @@
 // Shaders do canvas de efeitos. Todos desenham um quad unitário posicionado por uRect (px CSS).
 
+// A precisão de uRect/uView precisa bater entre vertex e fragment (mesmo nome = mesmo uniform).
 export const FX_VERTEX = /* glsl */ `
+precision highp float;
 attribute vec2 aPos;          // 0..1
-uniform vec4 uRect;           // x, y, largura, altura (px CSS, origem no topo-esquerda da viewport)
-uniform vec2 uView;           // tamanho da viewport (px CSS)
+uniform highp vec4 uRect;     // x, y, largura, altura (px CSS, origem no topo-esquerda da viewport)
+uniform highp vec2 uView;     // tamanho da viewport (px CSS)
 varying vec2 vUv;             // 0..1, y para cima
 void main(){
   vec2 px = uRect.xy + aPos * uRect.zw;
@@ -38,7 +40,8 @@ vec3 iris(vec2 q, float time, float shift){
 export const IRIS_FRAGMENT = /* glsl */ `
 precision highp float;
 varying vec2 vUv;
-uniform vec4 uRect;
+uniform highp vec4 uRect;
+uniform highp vec2 uView;
 uniform float uTime;
 uniform float uShift;
 uniform float uMode;     // 0 = gota da transição, 1 = glow (aditivo), 2 = card de preview
@@ -76,8 +79,8 @@ void main(){
     vec2 s = p;
     s.x -= v.x * (vUv.y - 0.5) * uRect.w * 0.25;
     s.y -= v.y * (vUv.x - 0.5) * uRect.z * 0.15;
-    vec2 half = uRect.zw * 0.42; // o quad tem folga para a deformação
-    vec2 q = abs(s) - (half - uRadius);
+    vec2 halfSize = uRect.zw * 0.42; // o quad tem folga para a deformação ('half' é reservado em GLSL)
+    vec2 q = abs(s) - (halfSize - uRadius);
     float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
     float a = clamp(0.5 - d, 0.0, 1.0) * uAlpha;
     if (a <= 0.0) discard;
@@ -89,7 +92,8 @@ void main(){
 export const THUMB_FRAGMENT = /* glsl */ `
 precision mediump float;
 varying vec2 vUv;
-uniform vec4 uRect;
+uniform highp vec4 uRect;   // mesma precisão do vertex shader
+uniform highp vec2 uView;
 uniform sampler2D uTexA;   // imagem anterior (crossfade)
 uniform sampler2D uTexB;   // imagem atual
 uniform vec2 uScaleA;      // "object-fit: cover" de cada textura

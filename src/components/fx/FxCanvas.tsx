@@ -16,7 +16,8 @@ const GLOW_ALPHA = 0.14;
 const SHIFT_GAIN = 0.0011; // mesma relação do hero: mover o cursor gira a paleta
 const MODE_BLOB = 0;
 const MODE_GLOW = 1;
-const MODE_CARD = 2;
+// (uMode 2 = card de preview: o shader ainda tem a branch, mas nada desenha mais — em Serviços
+// o efeito agora é só o glow do fundo seguindo o mouse.)
 
 type Tex = { tex: WebGLTexture; w: number; h: number };
 type Uniforms = Record<string, WebGLUniformLocation | null>;
@@ -281,6 +282,8 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     thumb.reveal += ((wantThumb ? 1 : 0) - thumb.reveal) * ease(0.12);
     thumb.mix += (1 - thumb.mix) * ease(0.12);
 
+    // Serviços não desenha mais um card: em hover o próprio glow do fundo assume a cor do serviço
+    // (preview.shift gira a paleta). O efeito fica só no fundo, seguindo o mouse.
     const wantPreview = hasPointer && fx.preview.active;
     preview.alpha += ((wantPreview ? 1 : 0) - preview.alpha) * ease(0.16);
     preview.shift += (fx.preview.phase - preview.shift) * ease(0.1);
@@ -288,11 +291,13 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     const tr = fx.transition;
     const s = tr.shrink;
     const transitionOn = tr.grow > 0.0005 && s < 0.999;
-    const glowTarget = hasPointer && (fx.glow.enabled || (transitionOn && s > 0.35)) ? GLOW_ALPHA : 0;
+    // Em Serviços o glow ganha um empurrão de opacidade: é ele que faz o papel do antigo card.
+    const glowBase = fx.glow.enabled || (transitionOn && s > 0.35) ? GLOW_ALPHA : 0;
+    const glowTarget = hasPointer ? Math.max(glowBase, GLOW_ALPHA * 1.6 * preview.alpha) : 0;
     glowAlpha += (glowTarget - glowAlpha) * ease(0.08);
     glowShift = (glowShift + Math.hypot(follow.vx, follow.vy) * SHIFT_GAIN) % 1;
 
-    const anything = transitionOn || thumb.alpha > 0.004 || preview.alpha > 0.004 || glowAlpha > 0.002;
+    const anything = transitionOn || thumb.alpha > 0.004 || glowAlpha > 0.002;
     if (!anything) {
       if (visible) {
         gl.clear(gl.COLOR_BUFFER_BIT);
@@ -309,20 +314,14 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     gl.clear(gl.COLOR_BUFFER_BIT);
     const time = (now - t0) / 1000;
 
-    // 1) glow (soma luz, por baixo de tudo)
+    // 1) glow (soma luz, por baixo de tudo). Em Serviços, a paleta vem do serviço sob o cursor.
     if (glowAlpha > 0.002) {
       const size = GLOW_RADIUS * 2.4;
-      drawIris(MODE_GLOW, follow.x, follow.y, size, size, GLOW_RADIUS, glowAlpha, glowShift, 0, 0, time);
+      const shift = preview.alpha > 0.004 ? preview.shift : glowShift;
+      drawIris(MODE_GLOW, follow.x, follow.y, size, size, GLOW_RADIUS, glowAlpha, shift, 0, 0, time);
     }
 
-    // 2) preview de Serviços
-    if (preview.alpha > 0.004) {
-      const w = clamp(vw * 0.2, 220, 360);
-      const h = w * 0.64;
-      drawIris(MODE_CARD, follow.x, follow.y, w / 0.84, h / 0.84, 18, preview.alpha, preview.shift, 0, 0, time);
-    }
-
-    // 3) thumbnail de Trabalhos
+    // 2) thumbnail de Trabalhos
     if (thumb.alpha > 0.004) {
       const b = textures.get(thumb.b);
       const a = textures.get(thumb.a) ?? b;

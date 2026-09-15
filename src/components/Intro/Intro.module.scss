@@ -1,0 +1,115 @@
+@use 'sass:map';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+@use '../../styles/breakpoints' as bp;
+
+// Overlay do intro: acima de tudo (o FxCanvas é z-index 40).
+// Preto puro — o hero, branco, está montado e pronto por baixo.
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: var(--black);
+  // Fase 3: a cortina abre por clip-path (circle() crescendo a partir do N), nunca por opacity.
+  // Sem clip-path aqui de propósito: quem introduz o circle() é o tween, e um inset() inicial
+  // só criaria um estado de tipo diferente que nunca entra na interpolação.
+  // Safe area (notch) + 100dvh vêm do inset:0 do fixed; o padding respeita o recorte.
+  padding: max(env(safe-area-inset-top), 0px) max(env(safe-area-inset-right), 0px)
+    max(env(safe-area-inset-bottom), 0px) max(env(safe-area-inset-left), 0px);
+  // O intro é decorativo e cobre a tela: nada atravessa para o hero enquanto roda.
+  cursor: wait;
+}
+
+// A marca que engole tudo na Fase 2. Só existe durante o intro.
+.intro__mark {
+  position: absolute;
+  top: clamp(1.25rem, 3vw, 2.25rem);
+  left: map.get($space, 'gutter');
+  z-index: 3;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(1.75rem, 4.2vw, 2.75rem);
+  line-height: 1;
+  color: var(--white);
+  // O "estalo" da Fase 2 escala a partir do próprio centro.
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+// Quadro central da montagem. O canvas desenha as imagens já decodificadas (corte seco).
+.intro__frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  // Mobile-first: quadro menor no celular, maior (e 4:3) no desktop.
+  width: min(78vw, 22rem);
+  aspect-ratio: 3 / 4;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  will-change: transform, filter;
+
+  @include bp.up('md') {
+    width: min(46vw, 34rem);
+    aspect-ratio: 4 / 3;
+  }
+}
+
+.intro__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// Contador: inferior-esquerda, mono/grotesca, branco.
+.intro__count {
+  position: absolute;
+  bottom: clamp(1.25rem, 3vw, 2.25rem);
+  left: map.get($space, 'gutter');
+  z-index: 3;
+  display: flex;
+  align-items: baseline;
+  gap: 0.15em;
+  font-family: var(--font-body), ui-monospace, monospace;
+  // Tabular: os dígitos não "dançam" de largura ao contar.
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-size: clamp(3.5rem, 13vw, 8rem);
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: var(--white);
+  will-change: transform, filter;
+}
+
+.intro__unit {
+  @include eyebrow;
+  font-size: clamp(0.625rem, 1.4vw, 0.75rem);
+  color: var(--muted);
+}
+
+// Botão "pular": acessível por teclado, discreto.
+.intro__skip {
+  @include eyebrow;
+  position: absolute;
+  right: map.get($space, 'gutter');
+  bottom: clamp(1.25rem, 3vw, 2.25rem);
+  z-index: 4;
+  padding: 0.7em 1.2em;
+  border: 1px solid var(--line-strong);
+  border-radius: map.get($radius, 'pill');
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.3s $ease-out, border-color 0.3s $ease-out;
+
+  @include hover {
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  &:focus-visible {
+    color: var(--white);
+    border-color: var(--white);
+  }
+}

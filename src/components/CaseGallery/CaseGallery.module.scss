@@ -1,0 +1,56 @@
+@use 'sass:map';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+@use '../../styles/breakpoints' as bp;
+
+.gallery {
+  @include container;
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  padding-bottom: map.get($space, 'section');
+
+  @include bp.up('md') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// Mobile: tudo vira uma coluna (o `half` só existe a partir de md).
+.gallery__item {
+  grid-column: 1 / -1;
+}
+
+.gallery__item--half {
+  @include bp.up('md') {
+    grid-column: span 1;
+  }
+}
+
+// O figure recebe o parallax (GSAP escreve `y` aqui) — transform puro, nada de layout.
+.gallery__figure {
+  position: relative;
+  margin: 0;
+  will-change: transform;
+
+  @include reduced-motion {
+    will-change: auto;
+  }
+}
+
+// A proporção vem do dado (ratio), reservada antes da imagem chegar: zero layout shift.
+.gallery__media {
+  position: relative;
+  aspect-ratio: var(--ratio, 16 / 10);
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background: #111;
+
+  img {
+    object-fit: cover;
+  }
+}
+
+.gallery__caption {
+  @include eyebrow;
+  margin-top: 0.9rem;
+  color: var(--muted);
+}

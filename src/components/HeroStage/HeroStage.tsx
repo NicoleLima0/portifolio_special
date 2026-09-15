@@ -37,13 +37,15 @@ export default function HeroStage({ children }: { children: ReactNode }) {
 
       mm.add(MOTION_OK, () => {
         const ui = stage.querySelectorAll('[data-hero-ui]');
-        const ink = stage.querySelector<HTMLElement>('[data-hero-layer="ink"]');
+        const hero = stage.querySelector<HTMLElement>('[data-hero-root]');
         const fluid = stage.querySelector<HTMLElement>('[data-hero-layer="fluid"]');
         const t = fx.transition;
-        // brightness via proxy: em repouso o filtro sai do elemento (sem custo de filtro no hero).
-        const inkTone = { b: 1 };
-        const applyInk = () => {
-          if (ink) ink.style.filter = inkTone.b >= 0.999 ? '' : `brightness(${inkTone.b.toFixed(3)})`;
+        // O brightness vai no hero inteiro (fundo branco + tinta + fluido): escurecer só a tinta
+        // deixaria o branco do fundo aparecendo pelos furos das letras e o resultado ficaria cinza.
+        // Via proxy: em repouso o filtro sai do elemento (sem custo de filtro no hero parado).
+        const tone = { b: 1 };
+        const applyTone = () => {
+          if (hero) hero.style.filter = tone.b >= 0.999 ? '' : `brightness(${tone.b.toFixed(3)})`;
         };
 
         const tl = gsap.timeline({
@@ -51,7 +53,10 @@ export default function HeroStage({ children }: { children: ReactNode }) {
           scrollTrigger: {
             trigger: stage,
             start: 'top top',
-            end: '+=100%',
+            // 65% de tela (era 100%): a coreografia é a mesma — as posições dos tweens são frações
+            // da timeline e reescalam juntas — mas sem a tela inteira de preto parado no fim.
+            // O "Sobre" entra por cima desse trecho final (ver About.tsx).
+            end: '+=65%',
             pin: true,
             pinSpacing: true,
             scrub: true,
@@ -65,18 +70,19 @@ export default function HeroStage({ children }: { children: ReactNode }) {
           },
         });
 
-        tl.to(ui, { y: -48, autoAlpha: 0, duration: 0.3 }, 0)
-          .to(inkTone, { b: 0, duration: 0.38, onUpdate: applyInk }, 0.04)
-          .to(t, { grow: 1, duration: 0.3, ease: 'power2.in' }, 0.34)
-          .to(fluid, { autoAlpha: 0, duration: 0.14 }, 0.52)
-          .to(t, { shrink: 1, duration: 0.32, ease: 'power3.out' }, 0.66)
-          .to({}, { duration: 0.02 });
+        tl.to(ui, { y: -48, autoAlpha: 0, duration: 0.26 }, 0)
+          // power2.in: cai rápido para o preto em vez de passar devagar por todos os cinzas
+          .to(tone, { b: 0, duration: 0.34, ease: 'power2.in', onUpdate: applyTone }, 0.02)
+          .to(t, { grow: 1, duration: 0.34, ease: 'power1.in' }, 0.2)
+          .to(fluid, { autoAlpha: 0, duration: 0.12 }, 0.46)
+          .to(t, { shrink: 1, duration: 0.34, ease: 'power3.out' }, 0.6)
+          .to({}, { duration: 0.06 });
 
         return () => {
           t.grow = 0;
           t.shrink = 0;
           fx.glow.enabled = false;
-          if (ink) ink.style.filter = '';
+          if (hero) hero.style.filter = '';
           setSuspend(false);
         };
       });

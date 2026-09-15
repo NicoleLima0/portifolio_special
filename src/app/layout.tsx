@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { archivoBlack, spaceGrotesk, syne } from '@/lib/fonts';
+import { archivoBlack, heading, spaceGrotesk } from '@/lib/fonts';
 import { site } from '@/lib/site';
 import SmoothScroll from '@/components/providers/SmoothScroll';
 import FxCanvas from '@/components/fx/FxCanvas';
+import Intro from '@/components/Intro/Intro';
 import './globals.scss';
 
 export const metadata: Metadata = {
@@ -39,11 +40,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${archivoBlack.variable} ${syne.variable} ${spaceGrotesk.variable}`}>
+    <html lang="pt-BR" className={`${archivoBlack.variable} ${heading.variable} ${spaceGrotesk.variable}`}>
       <body>
         <SmoothScroll />
         {children}
         <FxCanvas />
+        {/* Camada por cima de tudo (z-index 100 > FxCanvas 40); depois de {children} para o hero
+            já estar montado e pronto por baixo. Autodestrói ao terminar. */}
+        <Intro />
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { gsap, MOTION_OK, MOTION_REDUCED, useGSAP } from '@/lib/gsap';
 import { usePointer } from '@/hooks/usePointer';
 import { useInView } from '@/hooks/useInView';
@@ -9,6 +9,7 @@ import FluidCanvas from './FluidCanvas';
 import InkCanvas, { HERO_WORD, type IntroLetter } from './InkCanvas';
 import { createCoverage, useHeroLoop, type Coverage } from './heroFrame';
 import { useHeroSuspended } from '@/components/HeroStage/heroSuspend';
+import { useIntroGate } from '@/components/Intro/introGate';
 import styles from './Hero.module.scss';
 
 export default function Hero() {
@@ -17,7 +18,8 @@ export default function Hero() {
   const inView = useInView(rootRef);
   const reducedMotion = useReducedMotion();
   const suspended = useHeroSuspended(); // transição já cobriu o hero de preto
-  const running = inView && !reducedMotion && !suspended;
+  const introDone = useIntroGate(); // intro ainda cobrindo a tela: não desenhar por baixo
+  const running = inView && !reducedMotion && !suspended && introDone;
 
   // Um só loop para as duas camadas; parado fora da viewport, com reduced motion e sob a transição.
   const loop = useHeroLoop(running);
@@ -59,7 +61,7 @@ export default function Hero() {
         // O fromTo já aplicou o estado inicial inline: o CSS de "pendente" pode sair.
         root.removeAttribute('data-intro');
         introRef.current = intro;
-        if (nameReadyRef.current) intro.play();
+        if (nameReadyRef.current && introDoneRef.current) intro.play();
         // (A saída da UI no scroll agora faz parte da transição, em HeroStage.)
 
         return () => {
@@ -70,13 +72,32 @@ export default function Hero() {
     { scope: rootRef },
   );
 
-  const onNameReady = useCallback(() => {
-    nameReadyRef.current = true;
-    introRef.current?.play();
+  // A entrada do nome só toca com a fonte carregada E o intro fora do caminho (em qualquer ordem).
+  // Sem intro na página o portão já nasce aberto, então isto é o comportamento de sempre.
+  const introDoneRef = useRef(introDone);
+  introDoneRef.current = introDone;
+
+  const playName = useCallback(() => {
+    if (nameReadyRef.current && introDoneRef.current) introRef.current?.play();
   }, []);
 
+  const onNameReady = useCallback(() => {
+    nameReadyRef.current = true;
+    playName();
+  }, [playName]);
+
+  // Reavalia quando o portão abre (a fonte normalmente já carregou atrás do overlay).
+  useEffect(playName, [introDone, playName]);
+
   return (
-    <section ref={rootRef} className={styles.hero} id="inicio" aria-labelledby="hero-title" data-intro="pending">
+    <section
+      ref={rootRef}
+      className={styles.hero}
+      id="inicio"
+      aria-labelledby="hero-title"
+      data-intro="pending"
+      data-hero-root
+    >
       <noscript>
         <style>{'[data-hero-intro]{transform:none!important}'}</style>
       </noscript>
