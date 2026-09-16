@@ -170,6 +170,7 @@ $hover: '(hover: hover) and (pointer: fine)';
   overflow: hidden;
   border-radius: 0.9rem;
   background: #111; // placeholder enquanto a imagem carrega
+  container-type: size;
   // Tilt 3D sutil conforme o cursor (--mx/--my escritos no pointermove).
   transform: perspective(900px) rotateX(calc(var(--my, 0) * -3deg))
     rotateY(calc(var(--mx, 0) * 4deg));
@@ -202,11 +203,13 @@ $hover: '(hover: hover) and (pointer: fine)';
   text-transform: uppercase;
   white-space: nowrap;
   opacity: 0;
-  // Segue o cursor de leve (magnético) e cresce ao entrar.
-  transform: translate3d(calc(-50% + var(--mx, 0) * 60px), calc(-50% + var(--my, 0) * 40px), 0)
+  // Segue o cursor por toda a imagem (o botão substitui o ponteiro do sistema).
+  transform: translate3d(calc(-50% + var(--mx, 0) * 84cqw), calc(-50% + var(--my, 0) * 84cqh), 0)
     scale(0.86);
+  // Fade curto e independente do wipe do thumbnail no canvas: o rótulo aparece antes de a
+  // imagem terminar de abrir.
   transition:
-    opacity 0.45s $ease-out,
+    opacity 0.25s $ease-out,
     transform 0.55s $ease-out;
   pointer-events: none;
 }
@@ -231,6 +234,10 @@ $hover: '(hover: hover) and (pointer: fine)';
 @media #{$hover} {
   .work__link:hover,
   .work__link:focus-visible {
+    .work__figure {
+      cursor: none;
+    }
+
     .work__media {
       transform: perspective(900px) rotateX(calc(var(--my, 0) * -3deg))
         rotateY(calc(var(--mx, 0) * 4deg)) scale(1.04);
@@ -242,7 +249,7 @@ $hover: '(hover: hover) and (pointer: fine)';
 
     .work__cta {
       opacity: 1;
-      transform: translate3d(calc(-50% + var(--mx, 0) * 60px), calc(-50% + var(--my, 0) * 40px), 0)
+      transform: translate3d(calc(-50% + var(--mx, 0) * 84cqw), calc(-50% + var(--my, 0) * 84cqh), 0)
         scale(1);
     }
 

@@ -11,6 +11,8 @@ const FRAME_MS = 1000 / 60;
 const FX_SCALE = 0.75; // resolução interna relativa ao DPR capado
 const RESIZE_DEBOUNCE = 100;
 const FOLLOW = 0.16; // lerp/frame do que segue o cursor (60fps)
+const VEL_SMOOTH = 0.2; // lerp/frame da velocidade usada na deformação (suaviza engasgos)
+const THUMB_REVEAL = 0.2; // lerp/frame do wipe do thumbnail — acima do FOLLOW: abre antes de assentar
 const GLOW_RADIUS = 320;
 const GLOW_ALPHA = 0.14;
 const SHIFT_GAIN = 0.0011; // mesma relação do hero: mover o cursor gira a paleta
@@ -206,6 +208,9 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
   // --- Estado suavizado ---
   const t0 = performance.now();
   const follow = { x: 0, y: 0, vx: 0, vy: 0, init: false };
+  // Velocidade com suavização própria: o delta cru de `follow` dispara num frame longo
+  // (scroll pesado, GC, volta de aba) e é esse pico que torcia o card.
+  const velSmooth = { x: 0, y: 0 };
   const thumb = { alpha: 0, reveal: 0, mix: 1, a: '', b: '' };
   const preview = { alpha: 0, shift: 0 };
   let glowAlpha = 0;
@@ -234,7 +239,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     gl.uniform1f(iu.uShift, shift);
     gl.uniform1f(iu.uFill, fill);
     gl.uniform1f(iu.uEdge, edge);
-    gl.uniform2f(iu.uVel, follow.vx, -follow.vy);
+    gl.uniform2f(iu.uVel, velSmooth.x, -velSmooth.y);
     gl.uniform1f(iu.uTime, time);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   };
@@ -242,7 +247,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
   const tick = () => {
     if (lost) return;
     const now = performance.now();
-    const dt = last ? Math.min(now - last, 100) : FRAME_MS;
+    const dt = last ? Math.min(now - last, 48) : FRAME_MS; // ~3 frames: engasgo não vira pico de velocidade
     last = now;
     const ease = (base: number) => 1 - Math.pow(1 - base, dt / FRAME_MS);
 
@@ -266,6 +271,10 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
       follow.x = nx;
       follow.y = ny;
     }
+    // A deformação lê daqui, nunca do delta cru: um frame longo é absorvido em vez de virar torção.
+    const kv = ease(VEL_SMOOTH);
+    velSmooth.x += (follow.vx - velSmooth.x) * kv;
+    velSmooth.y += (follow.vy - velSmooth.y) * kv;
 
     // Thumbnail: troca de imagem só quando a nova textura está pronta (crossfade A → B).
     const src = fx.thumb.src;
@@ -279,7 +288,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     }
     const wantThumb = hasPointer && fx.thumb.active && textures.has(thumb.b);
     thumb.alpha += ((wantThumb ? 1 : 0) - thumb.alpha) * ease(0.16);
-    thumb.reveal += ((wantThumb ? 1 : 0) - thumb.reveal) * ease(0.12);
+    thumb.reveal += ((wantThumb ? 1 : 0) - thumb.reveal) * ease(THUMB_REVEAL);
     thumb.mix += (1 - thumb.mix) * ease(0.12);
 
     // Serviços não desenha mais um card: em hover o próprio glow do fundo assume a cor do serviço
@@ -340,7 +349,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
         gl.uniform2f(tu.uScaleA, ta > aq ? aq / ta : 1, ta > aq ? 1 : ta / aq);
         gl.uniform2f(tu.uScaleB, tb > aq ? aq / tb : 1, tb > aq ? 1 : tb / aq);
         gl.uniform1f(tu.uMix, thumb.mix);
-        gl.uniform2f(tu.uVel, follow.vx, -follow.vy);
+        gl.uniform2f(tu.uVel, velSmooth.x, -velSmooth.y);
         gl.uniform2f(tu.uParallax, follow.x / vw - 0.5, -(follow.y / vh - 0.5));
         gl.uniform1f(tu.uReveal, thumb.reveal);
         gl.uniform1f(tu.uAlpha, thumb.alpha);

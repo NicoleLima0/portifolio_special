@@ -75,10 +75,13 @@ void main(){
     gl_FragColor = vec4(iris(p / 420.0, uTime, uShift) * a, 0.0);
   } else {
     // Card: retângulo arredondado que "entorta" com a velocidade do cursor.
+    // O shear usa o MENOR lado nos dois eixos: com uRect.w/uRect.z o mesmo movimento diagonal
+    // deformava mais num eixo que no outro só por causa do aspect ratio.
     vec2 v = clamp(uVel / 40.0, -1.0, 1.0);
+    float shear = min(uRect.z, uRect.w) * 0.2;
     vec2 s = p;
-    s.x -= v.x * (vUv.y - 0.5) * uRect.w * 0.25;
-    s.y -= v.y * (vUv.x - 0.5) * uRect.z * 0.15;
+    s.x -= v.x * (vUv.y - 0.5) * shear;
+    s.y -= v.y * (vUv.x - 0.5) * shear;
     vec2 halfSize = uRect.zw * 0.42; // o quad tem folga para a deformação ('half' é reservado em GLSL)
     vec2 q = abs(s) - (halfSize - uRadius);
     float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
@@ -113,8 +116,11 @@ vec3 sampleTex(sampler2D tex, vec2 uv, vec2 scale, float split){
 void main(){
   vec2 v = clamp(uVel / 40.0, -1.0, 1.0);
   vec2 uv = vUv;
-  uv.x += v.x * 0.05 * sin(uv.y * 3.14159);
-  uv.y += v.y * 0.05 * sin(uv.x * 3.14159);
+  // O warp é em UV (0..1): sem normalizar pelo lado menor, a mesma velocidade entorta mais
+  // no eixo curto do card. 'bend' deixa o deslocamento equivalente em px nos dois eixos.
+  vec2 bend = vec2(0.05) * (min(uRect.z, uRect.w) / uRect.zw);
+  uv.x += v.x * bend.x * sin(uv.y * 3.14159);
+  uv.y += v.y * bend.y * sin(uv.x * 3.14159);
   uv = (uv - 0.5) * 0.88 + 0.5 + uParallax * 0.05; // zoom leve = margem para o parallax
   float split = length(v) * 0.008;
   vec3 col = mix(sampleTex(uTexA, uv, uScaleA, split), sampleTex(uTexB, uv, uScaleB, split), uMix);

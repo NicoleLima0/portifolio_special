@@ -61,6 +61,26 @@
   height: 100%;
 }
 
+// Micro-rótulo da etapa: logo abaixo do quadro, centralizado. Discreto de propósito —
+// é uma legenda da narrativa, não um título.
+.intro__label {
+  @include eyebrow;
+  position: absolute;
+  top: calc(50% + min(78vw, 22rem) * 4 / 3 / 2 + 1.25rem);
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  font-size: clamp(0.5625rem, 1.6vw, 0.6875rem);
+  letter-spacing: 0.32em;
+  color: var(--muted);
+  white-space: nowrap;
+
+  @include bp.up('md') {
+    // No desktop o quadro é 4/3 (altura = largura * 3/4).
+    top: calc(50% + min(46vw, 34rem) * 3 / 4 / 2 + 1.5rem);
+  }
+}
+
 // Contador: inferior-esquerda, mono/grotesca, branco.
 .intro__count {
   position: absolute;

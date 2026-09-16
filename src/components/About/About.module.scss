@@ -1,32 +1,63 @@
 @use 'sass:map';
 @use '../../styles/tokens' as *;
 @use '../../styles/mixins' as *;
+@use '../../styles/breakpoints' as *;
 
 .about {
   position: relative;
-  overflow: hidden; // máscara da entrada por baixo
-  padding-block: map.get($space, 'section');
-  background: var(--black);
-  color: var(--white);
+  // O topo é bem menor que o padrão de seção: logo depois da transição do Hero (que já pina a
+  // tela e acaba em preto), um padding-top grande aqui somava a mais um trecho de preto vazio
+  // antes do título "Sobre" aparecer — dava a sensação de tela travada. A base mantém o respiro
+  // padrão para separar do Works.
+  padding-top: 5px;
+  padding-bottom: map.get($space, 'section');
+  background: var(--black); // preto limpo, sem imagem atrás
+  color: #ffffff;
 }
 
 .about__inner {
   @include container;
+  // Referência do `.about__flair-anchor`, que é IRMÃO de `.about__text` (não filho — um span
+  // solto dentro do texto era engolido pelo SplitText a cada re-split e ficava com dimensão
+  // zero, medido). O About.tsx calcula left/top do anchor relativos a ESTE elemento.
+  position: relative;
 }
 
 .about__eyebrow {
   @include eyebrow;
-  margin-bottom: 2.5rem;
+  // 2.5rem deixava só ~38-40px entre o eyebrow e a frase — pequeno demais pro desenho da
+  // Etapa 4 ter presença de verdade ali (a 1ª tentativa, ~86px, ainda saiu minúscula e sem
+  // graça). Este respiro é bem maior de propósito: o desenho precisa de espaço para ser GRANDE,
+  // não só "caber sem tocar em nada".
+  margin-bottom: clamp(4rem, 14vw, 11rem);
   color: var(--muted);
 }
 
+// Texto corrido normal: quebra de linha natural, nada fora do fluxo.
+// A frase JÁ NASCE branca e legível — o scroll não a acende, só dispara os efeitos nas
+// palavras-chave (é assim no gsap.com).
 .about__text {
-  max-width: 22ch;
+  // `ch` acompanha o tamanho da fonte, então a medida de leitura fica estável em toda a escala.
+  max-width: 26ch;
   font-family: var(--font-heading), sans-serif;
-  font-size: clamp(2rem, 5.6vw, 5.25rem);
+  font-size: clamp(1.75rem, 5.2vw, 4.5rem);
   font-weight: 700;
-  line-height: 1.08;
+  line-height: 1.16;
   letter-spacing: -0.025em;
+  color: #ffffff;
+  // Sem quebra dentro da palavra: o SplitText já garante que o char não vira ponto de quebra,
+  // e isto impede qualquer palavra longa de encostar na borda.
+  overflow-wrap: break-word;
+  // A profundidade do giro 3D mora AQUI, no pai: sem perspective o rotationX vira um
+  // achatamento vertical (a letra "espreme" em vez de girar). Valor alto = giro discreto,
+  // sem a letra parecer que salta para fora da tela.
+  perspective: 800px;
+}
+
+// Linhas e palavras criadas pelo SplitText. A linha precisa de overflow visível: o giro e o
+// rise passam um pouco além da caixa e um `hidden` aqui cortaria as letras.
+.about__line {
+  display: block;
 }
 
 .about__word {
@@ -34,26 +65,102 @@
   white-space: pre;
 }
 
-.about__letter {
+// O alvo da animação. inline-block é o que permite transformar cada letra sem tirá-la do fluxo.
+.about__char {
   display: inline-block;
+  // O giro é no eixo X: sem isto o verso da letra some no meio da volta.
+  backface-visibility: visible;
+  transform-style: preserve-3d;
 }
 
-// Onda contínua nas letras (só transform). A classe entra/sai com a seção na viewport.
-.about--waving .about__letter {
-  animation: about-wave 3.2s ease-in-out infinite;
-  animation-delay: calc(var(--i) * -0.045s);
+// Só as palavras que realmente animam ganham `will-change` — nas outras seria desperdício
+// (o brief é explícito: will-change com parcimônia).
+.about__key[data-fx='spin'] .about__char,
+.about__key[data-fx='rise'] .about__char {
+  will-change: transform, color, opacity;
+}
 
-  @include reduced-motion {
-    animation: none;
+// A palavra-chave (data-fx="spin" | "rise"). Fica `inline` para continuar quebrando linha
+// como texto comum.
+.about__key {
+  color: inherit; // nasce igual ao resto; a cor do giro chega pelo tween
+  white-space: nowrap; // o efeito não pode ser partido ao meio por uma quebra de linha
+}
+
+// O ponto de ancoragem do desenho: fica no FIM DA PRIMEIRA LINHA do texto (não numa palavra
+// específica — uma palavra muda de linha dependendo da largura da tela, e "acima dela" nem
+// sempre cai acima do eyebrow). O About.tsx calcula `left`/`top` via JS a partir da geometria
+// real da primeira linha; este elemento em si não ocupa espaço (`position: absolute`, sem
+// altura própria), então nunca empurra o layout.
+.about__flair-anchor {
+  position: absolute;
+  pointer-events: none;
+  // O `em` do desenho (abaixo) precisa escalar com a MESMA fonte da frase, não a fonte padrão
+  // da página — mas o anchor é irmão de `.about__text`, não filho, então não herda o
+  // `clamp()` dela automaticamente. Repetido aqui de propósito (duplicar um valor simples é
+  // mais seguro que criar uma dependência de herança entre irmãos).
+  font-size: clamp(1.75rem, 5.2vw, 4.5rem);
+}
+
+// O desenho. ACIMA do anchor (`bottom: 100%`), que já está no fim da linha 1 — logo, sempre
+// tem o respiro do eyebrow acima, em qualquer largura de tela.
+//
+// `bottom: 100%` (não `top` + `translateY`): a saída animada do About.tsx anima `y` no GSAP,
+// que sobrescreve `transform` inteiro — um `translateY` fixo no CSS seria perdido assim que o
+// tween rodasse. Com `bottom`, a posição de repouso não depende de transform nenhum.
+.about__flair-svg {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.3em;
+  // CAUSA RAIZ do bug de tamanho zero (achada isolando com createElementNS num documento em
+  // branco): globals.scss tem `svg { max-width: 100% }`. O ancestral (`.about__flair-anchor`)
+  // é `position: absolute` sem largura própria — width computado = 0. `max-width: 100%` de um
+  // pai de largura 0 é `max-width: 0`, que VENCE sobre o `width: 1.85em` abaixo (max-width tem
+  // precedência sobre width quando é menor). `max-width: none` neutraliza isso especificamente
+  // aqui, sem mexer na regra global (que existe para não deixar imagens vazarem em outro lugar).
+  max-width: none;
+  // Medido (1440px): o gap entre o eyebrow e a linha 1 é ~174px — 1.85em × 72px(4.5rem) ≈ 133px
+  // cabe com folga real (a v1, 3.5em/252px, estourava; e a v2 tentava caber ACIMA de uma
+  // palavra específica, que tinha só ~38px de sobra em outra posição).
+  width: 1.85em;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+  // Nasce invisível: quem revela é a timeline. Sem isto o desenho pisca completo antes do JS.
+  opacity: 0;
+}
+
+// A linha que liga o desenho ao fim da primeira linha: sem ela, o desenho grande fica
+// "flutuando" solto no espaço em branco, sem relação visual clara com o texto abaixo. Um traço
+// vertical curto, partindo da base do SVG até o anchor, conecta os dois visualmente.
+.about__flair-tether {
+  position: absolute;
+  bottom: 100%;
+  right: 0.9em;
+  width: 2px;
+  height: 0.35em;
+  background: var(--violet);
+  opacity: 0;
+  pointer-events: none;
+}
+
+// Sem movimento: o desenho não é desenhado, mas também não pode simplesmente sumir — ele faz
+// parte da composição. Aparece pronto e estático.
+@include reduced-motion {
+  .about__flair-svg {
+    opacity: 1;
   }
 }
 
-@keyframes about-wave {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-0.06em);
+// Sem movimento: a frase já é branca e estática por padrão, então basta neutralizar os
+// estados iniciais que o JS aplicaria (o matchMedia(MOTION_OK) nem roda, mas garante o caso
+// de o split existir por algum outro caminho).
+@include reduced-motion {
+  .about__char {
+    opacity: 1 !important;
+    transform: none !important;
+    color: inherit !important;
+    will-change: auto;
   }
 }

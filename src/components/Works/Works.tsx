@@ -218,11 +218,11 @@ export default function Works() {
                         className={styles.work__img}
                         loading={i < 2 ? 'eager' : 'lazy'}
                       />
+                      <span className={styles.work__cta} aria-hidden="true">
+                        ver projeto ↗
+                      </span>
                     </span>
                   </ViewTransition>
-                  <span className={styles.work__cta} aria-hidden="true">
-                    ver projeto ↗
-                  </span>
                 </span>
 
                 <span className={styles.work__foot}>

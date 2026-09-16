@@ -4,97 +4,265 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gsap } from '@/lib/gsap';
 import { scrollState } from '@/lib/scroll';
 import { closeIntroGate, openIntroGate } from './introGate';
+import { FRAMES, frameAt, labelAt, type Stage } from './introFrames';
 import styles from './Intro.module.scss';
 
 const SESSION_KEY = 'nicole:intro-played';
 
 // --- Ritmo (o que aprovamos antes de plugar as imagens finais) ---
 const LOAD_CEILING = 3.5; // s — teto de segurança: nunca prender o usuário
-const MIN_PHASE1 = 1.15; // s — piso do contador (load instantâneo com cache não vira "flash")
+const MIN_PHASE1 = 1.6; // s — piso do contador: a narrativa precisa de tempo para ser lida
 const CATCH_UP = 0.45; // s — subida suave até 100 quando o load termina antes
 const COLLAPSE = 0.72; // s — Fase 2
 const REVEAL = 0.85; // s — Fase 3
-const FRAME_MIN = 90; // ms visível por imagem (começo, mais calmo)
-const FRAME_MAX = 140; // ms visível por imagem (acelera conforme o contador sobe)
-const SHOTS = 10; // 8–12 imagens na montagem
+const SHOTS = FRAMES.length;
 
-/** Placeholders procedurais: objetos iridescentes/chrome na nossa paleta, sem baixar nada.
- *  Trocar por webp/avif reais depois — o caminho de decode já está pronto em loadShots(). */
-const PALETTE = [
-  ['#1d0b4e', '#a668ff', '#38e8ff'],
-  ['#2a1070', '#ff2e97', '#ffc2ec'],
-  ['#0b0612', '#3f2bd0', '#38e8ff'],
-  ['#3f0b3a', '#ff2e97', '#a668ff'],
-  ['#12063a', '#ffc2ec', '#38e8ff'],
-];
+/** Duotone da identidade por etapa: [sombra, luz]. A imagem vira luminância e reentra nessa rampa,
+ *  então foto real e placeholder ficam na MESMA paleta — nada parece banco de imagem. */
+const DUOTONE: Record<Stage, [string, string]> = {
+  ideia: ['#0b0612', '#a668ff'],
+  processo: ['#12063a', '#38e8ff'],
+  montagem: ['#1d0b4e', '#ffc2ec'],
+  'no-ar': ['#2a1070', '#38e8ff'],
+  resultado: ['#3f0b3a', '#ff2e97'],
+  fluido: ['#0b0612', '#ffc2ec'],
+};
 
-type Shot = HTMLCanvasElement | ImageBitmap;
+type Shot = HTMLCanvasElement;
 
-/** Um frame de "papel laminado": gradiente da paleta + dobras/creases claras por cima. */
-function paintShot(w: number, h: number, i: number): HTMLCanvasElement {
+const seed = (i: number) => Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+
+/** Traços de rascunho/wireframe: caixas e linhas, como um caderno. */
+function paintIdeia(ctx: CanvasRenderingContext2D, w: number, h: number, i: number) {
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = Math.max(1.5, w * 0.005);
+  ctx.strokeRect(w * 0.16, h * 0.14, w * 0.68, h * 0.72);
+  ctx.strokeRect(w * 0.22, h * 0.2, w * 0.56, h * 0.16); // "header"
+  for (let k = 0; k < 5; k++) {
+    const y = h * (0.44 + k * 0.08);
+    const len = 0.3 + seed(i + k) * 0.32;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.22, y);
+    ctx.lineTo(w * (0.22 + len), y);
+    ctx.stroke();
+  }
+  // Um bloco "escolhido" muda de lugar entre os frames: a ideia se procurando.
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(w * (0.22 + seed(i) * 0.3), h * 0.62, w * 0.2, h * 0.16);
+  ctx.globalAlpha = 1;
+}
+
+/** Código: linhas indentadas de comprimentos variados, como um editor. */
+function paintProcesso(ctx: CanvasRenderingContext2D, w: number, h: number, i: number) {
+  ctx.fillStyle = '#fff';
+  const rows = 13;
+  for (let k = 0; k < rows; k++) {
+    const y = h * (0.16 + k * 0.055);
+    const indent = 0.14 + (k % 3) * 0.07;
+    const len = 0.18 + seed(i * 3 + k) * 0.5;
+    ctx.globalAlpha = 0.28 + seed(k + i) * 0.5;
+    ctx.fillRect(w * indent, y, w * len, h * 0.022);
+  }
+  ctx.globalAlpha = 1;
+  // Cursor piscando na linha ativa.
+  ctx.fillRect(w * 0.14, h * (0.16 + (i % rows) * 0.055), w * 0.008, h * 0.03);
+}
+
+/** Produto sendo montado: blocos de um layout entrando um a um. */
+function paintMontagem(ctx: CanvasRenderingContext2D, w: number, h: number, i: number) {
+  ctx.fillStyle = '#fff';
+  const blocks: [number, number, number, number][] = [
+    [0.1, 0.1, 0.8, 0.1],
+    [0.1, 0.24, 0.38, 0.3],
+    [0.52, 0.24, 0.38, 0.3],
+    [0.1, 0.58, 0.8, 0.12],
+    [0.1, 0.74, 0.5, 0.12],
+  ];
+  blocks.forEach((b, k) => {
+    ctx.globalAlpha = k <= (i % (blocks.length + 1)) ? 0.85 : 0.14;
+    ctx.fillRect(w * b[0], h * b[1], w * b[2], h * b[3]);
+  });
+  ctx.globalAlpha = 1;
+}
+
+/** No ar: moldura de desktop + moldura de celular lado a lado. */
+function paintNoAr(ctx: CanvasRenderingContext2D, w: number, h: number, i: number) {
+  ctx.strokeStyle = '#fff';
+  ctx.fillStyle = '#fff';
+  ctx.lineWidth = Math.max(2, w * 0.006);
+  ctx.strokeRect(w * 0.08, h * 0.2, w * 0.6, h * 0.42); // desktop
+  ctx.fillRect(w * 0.3, h * 0.66, w * 0.16, h * 0.02); // pé do monitor
+  ctx.globalAlpha = 0.5;
+  ctx.fillRect(w * 0.11, h * 0.24, w * 0.54, h * 0.06);
+  ctx.globalAlpha = 1;
+  ctx.strokeRect(w * 0.74, h * 0.34, w * 0.17, h * 0.4); // mobile
+  // "Carregando": uma barra que avança entre os frames.
+  ctx.fillRect(w * 0.11, h * 0.54, w * 0.54 * (0.3 + seed(i) * 0.7), h * 0.03);
+}
+
+/** Resultado: barras subindo + a seta de crescimento. */
+function paintResultado(ctx: CanvasRenderingContext2D, w: number, h: number, i: number) {
+  ctx.fillStyle = '#fff';
+  const bars = 6;
+  for (let k = 0; k < bars; k++) {
+    const grow = Math.min(1, (i % 3) / 2 + 0.4);
+    const hh = (0.12 + (k / bars) * 0.55) * grow;
+    ctx.globalAlpha = 0.45 + (k / bars) * 0.5;
+    ctx.fillRect(w * (0.14 + k * 0.12), h * (0.8 - hh), w * 0.08, h * hh);
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = Math.max(2, w * 0.007);
+  ctx.beginPath();
+  ctx.moveTo(w * 0.16, h * 0.62);
+  ctx.lineTo(w * 0.84, h * 0.2);
+  ctx.stroke();
+  ctx.beginPath(); // ponta da seta
+  ctx.moveTo(w * 0.84, h * 0.2);
+  ctx.lineTo(w * 0.72, h * 0.22);
+  ctx.moveTo(w * 0.84, h * 0.2);
+  ctx.lineTo(w * 0.82, h * 0.32);
+  ctx.stroke();
+}
+
+/**
+ * A ponte com o hero: o mesmo fluido iridescente, em 2D.
+ * `pal()` reproduz a paleta canônica do shader (fluid.frag.ts) — os coeficientes são os aprovados,
+ * então a última imagem do intro e o hero são reconhecidamente a mesma assinatura.
+ */
+function paintFluido(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const img = ctx.createImageData(w, h);
+  const d = img.data;
+  const A = [0.12, 0.06, 0.2];
+  const B = [0.45, 0.3, 0.55];
+  const D = [0.0, 0.18, 0.4];
+  const CREASE = [0.7, 0.6, 1.0];
+
+  // A paleta canônica só é iridescente numa faixa estreita: fora de ~0.25–0.35 ela vai para
+  // azul/oliva (verificado varrendo a rampa). No hero é o uShift + o crease que a mantêm ali;
+  // aqui o `t` fica confinado nessa janela e o crease faz o brilho violeta/magenta por cima.
+  const T0 = 0.25;
+  const T1 = 0.36;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const u = x / w;
+      const v = y / h;
+      // Ruído suave e barato (a montagem não pode engasgar): senóides cruzadas no lugar do FBM.
+      const n =
+        0.5 +
+        0.25 * Math.sin(u * 6.0 + v * 2.6) +
+        0.15 * Math.sin(u * 11.0 - v * 8.0 + 1.7) +
+        0.1 * Math.sin((u + v) * 17.0 + 3.1);
+      const t = T0 + (T1 - T0) * Math.max(0, Math.min(1, n));
+      // Crease: as "dobras" claras do shader, que é o que dá o aspecto holográfico.
+      const crease = Math.pow(Math.abs(Math.sin((u - v) * 6.2831 + n * 4.0)), 10.0) * 0.7;
+      const o = (y * w + x) * 4;
+      for (let k = 0; k < 3; k++) {
+        const col = A[k] + B[k] * Math.cos(6.28318 * (t + D[k])) + crease * CREASE[k];
+        d[o + k] = Math.max(0, Math.min(1, col)) * 255;
+      }
+      d[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/** Luminância → rampa duotone da etapa. É o que amarra tudo na identidade. */
+function applyDuotone(ctx: CanvasRenderingContext2D, w: number, h: number, stage: Stage) {
+  const [lowHex, highHex] = DUOTONE[stage];
+  const hex = (s: string) => [
+    parseInt(s.slice(1, 3), 16),
+    parseInt(s.slice(3, 5), 16),
+    parseInt(s.slice(5, 7), 16),
+  ];
+  const lo = hex(lowHex);
+  const hi = hex(highHex);
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const l = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) / 255;
+    d[i] = lo[0] + (hi[0] - lo[0]) * l;
+    d[i + 1] = lo[1] + (hi[1] - lo[1]) * l;
+    d[i + 2] = lo[2] + (hi[2] - lo[2]) * l;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+/** Desenha um frame (placeholder procedural ou imagem real já decodificada) em seu canvas. */
+function paintShot(w: number, h: number, i: number, bmp?: ImageBitmap): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
   const ctx = c.getContext('2d');
   if (!ctx) return c;
-  const [a, b, d] = PALETTE[i % PALETTE.length];
-  const ang = (i / SHOTS) * Math.PI * 2;
-  const g = ctx.createLinearGradient(
-    w / 2 - (Math.cos(ang) * w) / 2,
-    h / 2 - (Math.sin(ang) * h) / 2,
-    w / 2 + (Math.cos(ang) * w) / 2,
-    h / 2 + (Math.sin(ang) * h) / 2,
-  );
-  g.addColorStop(0, a);
-  g.addColorStop(0.45 + 0.1 * Math.sin(i), b);
-  g.addColorStop(1, d);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
+  const { stage } = FRAMES[i];
 
-  // Dobras: linhas claras finas, ângulo variando por frame (o "amassado" holográfico).
-  ctx.globalCompositeOperation = 'screen';
-  ctx.lineWidth = Math.max(1, w * 0.004);
-  for (let k = 0; k < 14; k++) {
-    const t = (k + i * 0.37) % 14;
-    const off = (t / 14) * h * 1.6 - h * 0.3;
-    const sk = Math.sin(i + k) * w * 0.25;
-    ctx.strokeStyle = `rgba(255,255,255,${0.04 + 0.06 * Math.abs(Math.sin(i * 1.7 + k))})`;
-    ctx.beginPath();
-    ctx.moveTo(-sk, off);
-    ctx.lineTo(w + sk, off + h * 0.22);
-    ctx.stroke();
+  if (stage === 'fluido') {
+    paintFluido(ctx, w, h);
+    return c; // já está na paleta canônica: duotone aqui só empobreceria
   }
 
-  // Brilho central deslocado por frame: dá "volume" de metal.
-  const r = ctx.createRadialGradient(
-    w * (0.3 + 0.4 * ((i % 3) / 2)),
-    h * (0.3 + 0.4 * ((i % 4) / 3)),
-    0,
-    w / 2,
-    h / 2,
-    Math.max(w, h) * 0.7,
-  );
-  r.addColorStop(0, 'rgba(255,255,255,0.30)');
-  r.addColorStop(0.4, 'rgba(255,255,255,0.05)');
-  r.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = r;
+  ctx.fillStyle = '#07040e';
   ctx.fillRect(0, 0, w, h);
-  ctx.globalCompositeOperation = 'source-over';
+
+  if (bmp) {
+    // cover: preenche o quadro sem distorcer (as telas são 1.6, o quadro varia).
+    const scale = Math.max(w / bmp.width, h / bmp.height);
+    const dw = bmp.width * scale;
+    const dh = bmp.height * scale;
+    ctx.drawImage(bmp, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  } else if (stage === 'ideia') paintIdeia(ctx, w, h, i);
+  else if (stage === 'processo') paintProcesso(ctx, w, h, i);
+  else if (stage === 'montagem') paintMontagem(ctx, w, h, i);
+  else if (stage === 'no-ar') paintNoAr(ctx, w, h, i);
+  else paintResultado(ctx, w, h, i);
+
+  applyDuotone(ctx, w, h, stage);
   return c;
 }
 
 /**
- * Pré-carrega a montagem. Placeholders são desenhados (custo ~nada, já "decodificados").
- * Com imagens reais: troque por fetch + createImageBitmap (decode fora da thread principal),
- * que é o mesmo caminho do FxCanvas — assim a montagem nunca engasga no primeiro corte.
+ * Pré-carrega a montagem inteira ANTES de exibir: placeholders são desenhados na hora e as
+ * imagens reais passam por fetch + createImageBitmap (decode fora da thread principal — o mesmo
+ * caminho do FxCanvas). Cada frame pronto avança o contador, então o número reflete o load real.
  */
-function loadShots(w: number, h: number, onStep: (done: number, total: number) => void): Shot[] {
-  const shots: Shot[] = [];
-  for (let i = 0; i < SHOTS; i++) {
-    shots.push(paintShot(w, h, i));
-    onStep(i + 1, SHOTS);
-  }
-  return shots;
+function loadShots(
+  w: number,
+  h: number,
+  onStep: (done: number) => void,
+  onShot: (i: number, shot: Shot) => void,
+): () => void {
+  let cancelled = false;
+  let done = 0;
+  const step = () => onStep(++done);
+
+  FRAMES.forEach((frame, i) => {
+    if (!frame.src || typeof createImageBitmap !== 'function') {
+      onShot(i, paintShot(w, h, i));
+      step();
+      return;
+    }
+    fetch(frame.src)
+      .then((r) => r.blob())
+      .then((b) => createImageBitmap(b, { resizeWidth: w, resizeQuality: 'high' }))
+      .then((bmp) => {
+        if (cancelled) return bmp.close();
+        onShot(i, paintShot(w, h, i, bmp));
+        bmp.close();
+        step();
+      })
+      .catch(() => {
+        if (cancelled) return;
+        onShot(i, paintShot(w, h, i)); // rede falhou: o placeholder da etapa segura a narrativa
+        step();
+      });
+  });
+
+  return () => {
+    cancelled = true;
+  };
 }
 
 export default function Intro() {
@@ -103,6 +271,7 @@ export default function Intro() {
   const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLCanvasElement>(null);
   const countRef = useRef<HTMLSpanElement>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<HTMLDivElement>(null);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const finishRef = useRef<() => void>(() => {});
@@ -130,7 +299,9 @@ export default function Intro() {
     const root = rootRef.current;
     const canvas = frameRef.current;
     const count = countRef.current;
+    const label = labelRef.current;
     if (!root || !canvas || !count) return;
+    let shownLabel = ''; // último rótulo escrito no DOM (evita textContent por frame)
 
     const lenis = scrollState.lenis;
     const prevOverflow = document.body.style.overflow;
@@ -151,19 +322,36 @@ export default function Intro() {
 
     // --- Progresso real: fontes + imagens da montagem ---
     const progress = { load: 0, shown: 0 }; // load = real (0..1), shown = o que o contador exibe
-    let shots: Shot[] = [];
+    let shots: Shot[] = new Array(SHOTS); // preenchido fora de ordem (cada decode termina quando termina)
     let fontsDone = false;
     let shotsDone = 0;
+
+    // --- Montagem: corte seco, sem criar/destruir nós. O ÍNDICE VEM DO CONTADOR (introFrames.ts),
+    // então a narrativa acompanha o load real em vez de correr no tempo. ---
+    let shownShot = 0; // frame atualmente pintado no canvas
+    const drawShot = (i: number) => {
+      const s = shots[i];
+      if (!ctx2d || !s) return; // ainda decodificando: segura o frame anterior (nunca pisca preto)
+      ctx2d.drawImage(s, 0, 0, canvas.width, canvas.height);
+    };
 
     const recompute = () => {
       // Fontes valem metade (o hero depende delas), imagens a outra metade.
       progress.load = (fontsDone ? 0.5 : 0) + 0.5 * (shotsDone / SHOTS);
     };
 
-    shots = loadShots(Math.round(cw * dpr), Math.round(ch * dpr), (done) => {
-      shotsDone = done;
-      recompute();
-    });
+    const cancelLoad = loadShots(
+      Math.round(cw * dpr),
+      Math.round(ch * dpr),
+      (done) => {
+        shotsDone = done;
+        recompute();
+      },
+      (i, shot) => {
+        shots[i] = shot;
+        if (i === shownShot) drawShot(i); // o frame atual acabou de ficar pronto: pinta agora
+      },
+    );
 
     // Prioriza os assets do hero: a fonte do nome é o que o reveal precisa.
     const family = getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim();
@@ -176,18 +364,8 @@ export default function Intro() {
         recompute();
       });
 
-    // --- Montagem: corte seco, sem criar/destruir nós. Índice derivado do tempo. ---
-    let shotIndex = -1;
-    const drawShot = (i: number) => {
-      const s = shots[i % shots.length];
-      if (!ctx2d || !s) return;
-      ctx2d.drawImage(s, 0, 0, canvas.width, canvas.height);
-    };
     drawShot(0);
-    shotIndex = 0;
 
-    let elapsedShot = 0;
-    let nextSwap = FRAME_MAX;
     let phase1 = 0; // s decorridos na Fase 1
     let shownText = -1; // último valor escrito no DOM (evita textContent por frame)
     let onPhase1Done = () => {};
@@ -240,19 +418,23 @@ export default function Intro() {
       // Sobe no máximo 1/CATCH_UP por segundo → chegada suave, nunca um salto.
       progress.shown = Math.min(target, progress.shown + dt / CATCH_UP);
 
-      // Montagem: corte seco, acelerando de FRAME_MAX → FRAME_MIN conforme o contador sobe.
-      elapsedShot += dt * 1000;
-      if (elapsedShot >= nextSwap) {
-        elapsedShot = 0;
-        nextSwap = FRAME_MAX - (FRAME_MAX - FRAME_MIN) * progress.shown;
-        shotIndex = (shotIndex + 1) % shots.length;
-        drawShot(shotIndex);
-      }
-
       const n = Math.round(progress.shown * 100);
       if (n !== shownText) {
         shownText = n;
         count.textContent = String(n).padStart(3, '0');
+
+        // Montagem: corte seco dirigido pelo CONTADOR (não pelo tempo) — a faixa de cada frame
+        // está em introFrames.ts, então a narrativa acompanha o load real.
+        const next = frameAt(n);
+        if (next !== shownShot) {
+          shownShot = next;
+          drawShot(next);
+          const l = labelAt(next);
+          if (label && l !== shownLabel) {
+            shownLabel = l;
+            label.textContent = l;
+          }
+        }
       }
 
       if (progress.shown >= 1) {
@@ -269,6 +451,7 @@ export default function Intro() {
       finishRef.current = () => {};
       report();
       bucket = null;
+      cancelLoad(); // decodes em voo não devem pintar num canvas que já morreu
       gsap.ticker.remove(onFrame);
       tlRef.current?.kill();
       tlRef.current = null;
@@ -286,9 +469,9 @@ export default function Intro() {
         h1.setAttribute('tabindex', '-1');
         h1.focus({ preventScroll: true });
       }
-      // Libera as imagens da memória.
+      // Libera os canvases da montagem (cada um segura um backing store).
       shots.forEach((s) => {
-        if (typeof ImageBitmap !== 'undefined' && s instanceof ImageBitmap) s.close();
+        if (s) s.width = s.height = 0;
       });
       shots = [];
       if (ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
@@ -361,6 +544,8 @@ export default function Intro() {
         },
         'collapse',
       )
+      // O rótulo sai junto com o contador: é legenda da montagem, não tem papel no colapso.
+      .to(labelRef.current, { autoAlpha: 0, duration: COLLAPSE * 0.4, ease: 'power2.in' }, 'collapse')
       // O N "engole": micro-pulse no fim do colapso. Posição explícita nos dois tweens — sem ela o
       // elastic encadeia e empurra o label 'reveal' ~0.42s para frente, alongando o intro.
       .to(markRef.current, { scale: 1.28, duration: 0.12, ease: 'power3.out' }, `collapse+=${COLLAPSE - 0.06}`)
@@ -405,6 +590,7 @@ export default function Intro() {
       .to(markRef.current, { autoAlpha: 0, duration: 0.3, ease: 'power2.in' }, 'reveal+=0.1');
 
     return () => {
+      cancelLoad();
       gsap.ticker.remove(onFrame);
       tl.kill();
       tlRef.current = null;
@@ -413,7 +599,7 @@ export default function Intro() {
       document.body.style.overflow = prevOverflow;
       lenis?.start();
       shots.forEach((s) => {
-        if (typeof ImageBitmap !== 'undefined' && s instanceof ImageBitmap) s.close();
+        if (s) s.width = s.height = 0;
       });
       shots = [];
     };
@@ -447,6 +633,9 @@ export default function Intro() {
       <div className={styles.intro__frame} aria-hidden="true">
         <canvas ref={frameRef} className={styles.intro__canvas} />
       </div>
+
+      {/* Micro-rótulo da etapa, logo abaixo do quadro: "ideia", "no ar", "resultado"... */}
+      <div ref={labelRef} className={styles.intro__label} aria-hidden="true" />
 
       <div className={styles.intro__count} aria-hidden="true">
         <span ref={countRef}>000</span>

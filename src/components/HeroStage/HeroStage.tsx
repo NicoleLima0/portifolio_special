@@ -53,10 +53,11 @@ export default function HeroStage({ children }: { children: ReactNode }) {
           scrollTrigger: {
             trigger: stage,
             start: 'top top',
-            // 65% de tela (era 100%): a coreografia é a mesma — as posições dos tweens são frações
-            // da timeline e reescalam juntas — mas sem a tela inteira de preto parado no fim.
-            // O "Sobre" entra por cima desse trecho final (ver About.tsx).
-            end: '+=65%',
+            // 35% de tela (era 65%, antes 100%): a coreografia é a mesma — as posições dos tweens
+            // são frações da timeline e reescalam juntas — mas o pin libera com menos scroll do
+            // usuário, então o Sobre aparece logo depois que a gota termina de encolher, sem
+            // sobrar tela preta parada.
+            end: '+=35%',
             pin: true,
             pinSpacing: true,
             scrub: true,
@@ -75,8 +76,7 @@ export default function HeroStage({ children }: { children: ReactNode }) {
           .to(tone, { b: 0, duration: 0.34, ease: 'power2.in', onUpdate: applyTone }, 0.02)
           .to(t, { grow: 1, duration: 0.34, ease: 'power1.in' }, 0.2)
           .to(fluid, { autoAlpha: 0, duration: 0.12 }, 0.46)
-          .to(t, { shrink: 1, duration: 0.34, ease: 'power3.out' }, 0.6)
-          .to({}, { duration: 0.06 });
+          .to(t, { shrink: 1, duration: 0.34, ease: 'power3.out' }, 0.6);
 
         return () => {
           t.grow = 0;
