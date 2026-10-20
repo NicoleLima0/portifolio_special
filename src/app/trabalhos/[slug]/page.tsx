@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<'/trabalhos/[slug]'
   const work = findWork(slug);
   if (!work) return {};
 
-  const title = `${work.title} — ${work.client}`;
+  const title = `${work.title} | ${work.client}`;
   return {
     title,
     description: work.summary,
@@ -127,6 +127,7 @@ export default async function WorkCase({ params }: PageProps<'/trabalhos/[slug]'
                 // Acima da dobra: a doc do Next 16 recomenda eager + fetchPriority no lugar de `preload`.
                 loading="eager"
                 fetchPriority="high"
+                quality={95}
               />
             </div>
           </ViewTransition>
@@ -200,6 +201,7 @@ export default async function WorkCase({ params }: PageProps<'/trabalhos/[slug]'
                   fill
                   sizes="(min-width: 768px) 30vw, 92vw"
                   loading="lazy"
+                  quality={90}
                 />
               </div>
             </div>

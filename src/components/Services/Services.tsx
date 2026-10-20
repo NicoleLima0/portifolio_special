@@ -10,19 +10,19 @@ const HOVER = '(hover: hover) and (pointer: fine)';
 const SERVICES = [
   {
     title: 'Sites & landing pages',
-    text: 'Páginas rápidas e bonitas, pensadas pra transformar visita em cliente — e fáceis de achar no Google.',
+    text: 'Páginas rápidas que transformam visita em cliente e aparecem no Google.',
     items: ['Landing pages de lançamento', 'Sites institucionais', 'SEO técnico e performance'],
     phase: 0,
   },
   {
     title: 'Sistemas sob medida',
-    text: 'Painéis, áreas de cliente e automações que tiram trabalho manual do seu dia e deixam a operação redonda.',
+    text: 'Painéis, áreas de cliente e automações que tiram o trabalho manual do seu dia.',
     items: ['Painéis e áreas de cliente', 'Integrações e automações', 'Agendamentos e pagamentos'],
     phase: 0.33,
   },
   {
     title: 'Cuidado contínuo',
-    text: 'Depois do lançamento eu continuo por perto: melhorias, ajustes e tudo no ar funcionando sem susto.',
+    text: 'Depois do lançamento eu fico por perto: ajustes, melhorias e tudo no ar sem susto.',
     items: ['Manutenção e evolução', 'Monitoramento e backups', 'Melhorias guiadas por dados'],
     phase: 0.66,
   },

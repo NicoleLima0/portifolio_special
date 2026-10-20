@@ -216,6 +216,7 @@ export default function Works() {
                         fill
                         sizes="(min-width: 1024px) 44vw, (min-width: 768px) 46vw, 92vw"
                         className={styles.work__img}
+                        quality={90}
                         loading={i < 2 ? 'eager' : 'lazy'}
                       />
                       <span className={styles.work__cta} aria-hidden="true">

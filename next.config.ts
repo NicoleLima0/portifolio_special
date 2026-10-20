@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   images: {
     // AVIF preferido, WebP como fallback (o navegador escolhe pelo header Accept).
     formats: ['image/avif', 'image/webp'],
+    // Obrigatório no Next 16: valor fora da lista é coagido para o mais próximo. As capas e a
+    // galeria são screenshots de interface, cheios de texto pequeno — em 75 o texto borra.
+    qualities: [75, 90, 95],
   },
 };
 

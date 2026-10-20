@@ -4,13 +4,20 @@ export const site = {
   name: 'Nicole Lima',
   role: 'Desenvolvedora freelancer',
   url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nicolelima.dev',
-  title: 'Nicole Lima — Desenvolvedora freelancer',
+  title: 'Nicole Lima | Desenvolvedora freelancer',
   description:
-    'Sites, landing pages e sistemas sob medida feitos pra vender. Do rascunho ao lançamento, Nicole Lima cuida da parte técnica pra você focar no seu negócio.',
+    'Sites, landing pages e sistemas sob medida feitos pra vender. Nicole Lima cuida da parte técnica pra você focar no seu negócio.',
   email: 'contato@nicolelima.dev',
+  /** Só dígitos com DDI 55: é o formato que o wa.me exige. */
+  whatsapp: '5521975845915',
   socials: {
     linkedin: 'https://www.linkedin.com/in/nicolelima',
     github: 'https://github.com/nicolelima',
     instagram: 'https://www.instagram.com/nicolelima',
   },
 } as const;
+
+/** Conversa no WhatsApp já com a primeira mensagem escrita: menos atrito do que um chat vazio. */
+export const whatsappUrl = `https://wa.me/${site.whatsapp}?text=${encodeURIComponent(
+  'Oi, Nicole! Vim pelo seu site e queria conversar sobre um projeto.',
+)}`;

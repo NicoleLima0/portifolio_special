@@ -1,0 +1,126 @@
+@use 'sass:map';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+
+// Roxo neon escuro da faísca — o mesmo RGB usado no canvas (SparkButton.tsx).
+$neon: #8a2be2;
+
+.spark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // num container flex-column o item esticaria: a pílula tem a largura do texto
+  align-self: flex-start;
+  flex: 0 0 auto;
+  min-height: 4.75rem; // 76px: altura de referência do efeito
+  padding: 1em 1.9em;
+  border-radius: map.get($radius, 'pill');
+  // Vidro quase transparente: quem desenha a pílula é a borda luminosa, o specular do topo
+  // e a tinta roxa do neon por dentro.
+  background:
+    linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.07) 42%,
+      rgba(138, 43, 226, 0.1) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    inset 10px 0 24px -18px rgba(255, 255, 255, 0.5),
+    inset -10px 0 24px -18px rgba(255, 255, 255, 0.5),
+    inset 0 -18px 28px -20px rgba($neon, 0.5),
+    0 10px 34px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  color: var(--white);
+  isolation: isolate;
+  transition:
+    box-shadow 0.45s $ease-out,
+    background 0.45s $ease-out,
+    border-color 0.45s $ease-out;
+
+  @include hover {
+    background:
+      linear-gradient(
+        150deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.12) 42%,
+        rgba(138, 43, 226, 0.2) 100%
+      );
+    border-color: rgba(255, 255, 255, 0.42);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.16),
+      inset 10px 0 24px -18px rgba(255, 255, 255, 0.6),
+      inset -10px 0 24px -18px rgba(255, 255, 255, 0.6),
+      inset 0 -18px 28px -20px rgba($neon, 0.75),
+      0 10px 34px rgba(0, 0, 0, 0.45),
+      0 0 2.75rem rgba($neon, 0.5);
+
+    .spark__arrow {
+      transform: translateX(0.4em);
+    }
+  }
+
+  &:focus-visible {
+    border-color: rgba(255, 255, 255, 0.42);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      inset 10px 0 24px -18px rgba(255, 255, 255, 0.6),
+      inset -10px 0 24px -18px rgba(255, 255, 255, 0.6),
+      0 10px 34px rgba(0, 0, 0, 0.45),
+      0 0 2.75rem rgba($neon, 0.5);
+  }
+}
+
+// Pílula menor (header): o canvas se reescala sozinho pela altura medida.
+.spark--compact {
+  min-height: 2.75rem;
+  padding: 0.55em 1.2em;
+  font-size: 0.9375rem;
+}
+
+.spark__canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  // o canvas é maior que o botão de propósito: sem isto a regra global de imagem/canvas o
+  // encolhe até a largura do pai e a pílula desenhada sai espremida
+  max-width: none;
+
+  @include reduced-motion {
+    display: none;
+  }
+}
+
+// Anel estático: continua visível mesmo sem o canvas (reduced-motion).
+.spark__ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba($neon, 0.55);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.spark__body {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.spark__arrow {
+  width: 1.15em;
+  height: 1.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.4s $ease-out;
+}

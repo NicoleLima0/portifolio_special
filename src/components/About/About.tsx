@@ -44,11 +44,11 @@ import styles from './About.module.scss';
 type Piece = { text: string; fx?: 'spin' | 'rise' };
 
 const PIECES: Piece[] = [
-  { text: 'Eu tiro sua ideia do papel e coloco no ar. Sites ' },
+  { text: 'Tiro sua ideia do papel e coloco no ar. Sites ' },
   { text: 'rápidos', fx: 'spin' },
   { text: ', bonitos e feitos pra ' },
   { text: 'converter', fx: 'spin' },
-  { text: ', do rascunho ao lançamento, cuido da parte técnica pra você focar no ' },
+  { text: '. Eu cuido da técnica, você cuida do ' },
   // O rise fecha a frase, como o "fun stuff." do gsap.com. Sendo a ÚLTIMA palavra, o espaço
   // que ela ocupa enquanto está invisível fica na borda do texto, não num vão no meio.
   { text: 'seu negócio.', fx: 'rise' },
@@ -81,6 +81,19 @@ export default function About() {
           end: 'bottom top',
           onToggle: (self) => {
             fx.glow.enabled = !self.isActive;
+          },
+        });
+
+        // A transição leve hero → Sobre: a seção sobe um pouco e aparece ao entrar na tela (o
+        // CSS cuida do movimento, ver `[data-reveal='in']` em About.module.scss). Substitui a
+        // transição antiga do fundo (pin + gota iridescente), removida a pedido.
+        // `once: true`: é uma entrada, não um efeito que refaz a cada passagem.
+        const reveal = ScrollTrigger.create({
+          trigger: rootRef.current,
+          start: 'top 85%',
+          once: true,
+          onEnter: () => {
+            if (rootRef.current) rootRef.current.dataset.reveal = 'in';
           },
         });
 
@@ -293,6 +306,7 @@ export default function About() {
           window.clearTimeout(t);
           window.removeEventListener('resize', onResize);
           glowOff.kill();
+          reveal.kill();
           fx.glow.enabled = true; // não deixa o resto do site sem glow se o Sobre desmontar
           tl?.scrollTrigger?.kill();
           tl?.kill();

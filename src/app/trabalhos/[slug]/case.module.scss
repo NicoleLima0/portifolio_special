@@ -106,13 +106,16 @@
 .case__cover {
   position: relative;
   width: 100%;
-  // A capa é o alvo do morph vindo do card da home.
-  aspect-ratio: 16 / 10;
+  // A capa é o alvo do morph vindo do card da home. A proporção acompanha a do screenshot
+  // (~16/7.5): em 16/10 o `cover` comia as laterais da interface.
+  aspect-ratio: 16 / 8;
   overflow: hidden;
   background: #111; // placeholder enquanto a imagem carrega
 
   img {
-    object-fit: cover;
+    // `contain`: screenshot de interface não pode perder borda — o que se corta é justamente
+    // o menu lateral e a coluna da direita.
+    object-fit: contain;
   }
 }
 
@@ -303,13 +306,13 @@
 
 .case__next-media {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border-radius: 0.9rem;
   background: #111;
 
   img {
-    object-fit: cover;
+    object-fit: contain;
     transition: transform 0.7s $ease-out;
   }
 

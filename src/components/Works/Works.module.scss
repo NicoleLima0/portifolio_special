@@ -166,7 +166,7 @@ $hover: '(hover: hover) and (pointer: fine)';
 .work__media {
   position: relative;
   display: block;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border-radius: 0.9rem;
   background: #111; // placeholder enquanto a imagem carrega
@@ -177,14 +177,16 @@ $hover: '(hover: hover) and (pointer: fine)';
   transition: transform 0.6s $ease-out;
 
   @include bp.up('md') {
-    aspect-ratio: 5 / 4;
+    aspect-ratio: 16 / 9;
   }
 }
 
 .work__img {
-  object-fit: cover;
-  // Parallax interno: a imagem é maior que a moldura e desliza com o cursor.
-  transform: scale(1.06) translate3d(calc(var(--mx, 0) * -14px), calc(var(--my, 0) * -14px), 0);
+  // `contain` no card também: a capa é screenshot, e o corte tirava o menu lateral.
+  object-fit: contain;
+  // Parallax interno reduzido: com `contain` não há sobra de imagem para deslizar, então o
+  // movimento fica na escala mínima que ainda dá vida ao hover sem revelar borda.
+  transform: scale(1.02) translate3d(calc(var(--mx, 0) * -6px), calc(var(--my, 0) * -6px), 0);
   transition: transform 0.6s $ease-out;
 }
 

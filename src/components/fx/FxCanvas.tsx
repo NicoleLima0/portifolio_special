@@ -16,20 +16,11 @@ const THUMB_REVEAL = 0.2; // lerp/frame do wipe do thumbnail — acima do FOLLOW
 const GLOW_RADIUS = 320;
 const GLOW_ALPHA = 0.14;
 const SHIFT_GAIN = 0.0011; // mesma relação do hero: mover o cursor gira a paleta
-const MODE_BLOB = 0;
-const MODE_GLOW = 1;
-// (uMode 2 = card de preview: o shader ainda tem a branch, mas nada desenha mais — em Serviços
-// o efeito agora é só o glow do fundo seguindo o mouse.)
 
 type Tex = { tex: WebGLTexture; w: number; h: number };
 type Uniforms = Record<string, WebGLUniformLocation | null>;
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-const mix = (a: number, b: number, t: number) => a + (b - a) * t;
-const smoothstep = (a: number, b: number, x: number) => {
-  const t = clamp((x - a) / (b - a), 0, 1);
-  return t * t * (3 - 2 * t);
-};
 
 function compile(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
   const shader = gl.createShader(type);
@@ -117,7 +108,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    iu = uniforms(irisProg, ['uRect', 'uView', 'uTime', 'uShift', 'uMode', 'uRadius', 'uFill', 'uAlpha', 'uEdge', 'uVel']);
+    iu = uniforms(irisProg, ['uRect', 'uView', 'uTime', 'uShift', 'uRadius', 'uAlpha']);
     tu = uniforms(thumbProg, [
       'uRect', 'uView', 'uTexA', 'uTexB', 'uScaleA', 'uScaleB', 'uMix', 'uVel', 'uParallax', 'uReveal', 'uAlpha', 'uRadius',
     ]);
@@ -218,28 +209,12 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
   let visible = false;
   let last = 0;
 
-  const drawIris = (
-    mode: number,
-    cx: number,
-    cy: number,
-    w: number,
-    h: number,
-    radius: number,
-    alpha: number,
-    shift: number,
-    fill: number,
-    edge: number,
-    time: number,
-  ) => {
+  const drawGlow = (cx: number, cy: number, size: number, radius: number, alpha: number, shift: number, time: number) => {
     use(irisProg);
-    gl.uniform4f(iu.uRect, cx - w / 2, cy - h / 2, w, h);
-    gl.uniform1f(iu.uMode, mode);
+    gl.uniform4f(iu.uRect, cx - size / 2, cy - size / 2, size, size);
     gl.uniform1f(iu.uRadius, radius);
     gl.uniform1f(iu.uAlpha, alpha);
     gl.uniform1f(iu.uShift, shift);
-    gl.uniform1f(iu.uFill, fill);
-    gl.uniform1f(iu.uEdge, edge);
-    gl.uniform2f(iu.uVel, velSmooth.x, -velSmooth.y);
     gl.uniform1f(iu.uTime, time);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   };
@@ -297,16 +272,13 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     preview.alpha += ((wantPreview ? 1 : 0) - preview.alpha) * ease(0.16);
     preview.shift += (fx.preview.phase - preview.shift) * ease(0.1);
 
-    const tr = fx.transition;
-    const s = tr.shrink;
-    const transitionOn = tr.grow > 0.0005 && s < 0.999;
     // Em Serviços o glow ganha um empurrão de opacidade: é ele que faz o papel do antigo card.
-    const glowBase = fx.glow.enabled || (transitionOn && s > 0.35) ? GLOW_ALPHA : 0;
+    const glowBase = fx.glow.enabled ? GLOW_ALPHA : 0;
     const glowTarget = hasPointer ? Math.max(glowBase, GLOW_ALPHA * 1.6 * preview.alpha) : 0;
     glowAlpha += (glowTarget - glowAlpha) * ease(0.08);
     glowShift = (glowShift + Math.hypot(follow.vx, follow.vy) * SHIFT_GAIN) % 1;
 
-    const anything = transitionOn || thumb.alpha > 0.004 || glowAlpha > 0.002;
+    const anything = thumb.alpha > 0.004 || glowAlpha > 0.002;
     if (!anything) {
       if (visible) {
         gl.clear(gl.COLOR_BUFFER_BIT);
@@ -327,7 +299,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     if (glowAlpha > 0.002) {
       const size = GLOW_RADIUS * 2.4;
       const shift = preview.alpha > 0.004 ? preview.shift : glowShift;
-      drawIris(MODE_GLOW, follow.x, follow.y, size, size, GLOW_RADIUS, glowAlpha, shift, 0, 0, time);
+      drawGlow(follow.x, follow.y, size, GLOW_RADIUS, glowAlpha, shift, time);
     }
 
     // 2) thumbnail de Trabalhos
@@ -355,22 +327,6 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
         gl.uniform1f(tu.uAlpha, thumb.alpha);
         gl.uniform1f(tu.uRadius, 14);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      }
-    }
-
-    // 4) gota da transição (por cima de tudo)
-    if (transitionOn) {
-      const seamX = vw / 2;
-      const seamY = vh;
-      const coverR = Math.hypot(Math.max(seamX, vw - seamX), seamY) * 1.12;
-      const r = s > 0 ? mix(coverR, GLOW_RADIUS * 0.55, s) : coverR * tr.grow;
-      const cx = mix(seamX, hasPointer ? follow.x : vw / 2, s);
-      const cy = mix(seamY, hasPointer ? follow.y : vh / 2, s);
-      const alpha = 1 - smoothstep(0.55, 1, s);
-      if (alpha > 0.003 && r > 0.5) {
-        const edge = Math.max(r * 0.14, 28);
-        const size = (r + edge) * 2.2;
-        drawIris(MODE_BLOB, cx, cy, size, size, r, alpha, glowShift, 1 - s, edge, time);
       }
     }
   };

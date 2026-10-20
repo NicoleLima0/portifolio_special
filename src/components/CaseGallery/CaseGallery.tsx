@@ -94,11 +94,12 @@ export default function CaseGallery({ shots, title }: Props) {
                     : '(min-width: 1440px) 1360px, 92vw'
                 }
                 className={styles.gallery__img}
+                quality={95}
                 loading="lazy"
               />
             </div>
             <figcaption className={styles.gallery__caption}>
-              <span className="sr-only">{title} — </span>
+              <span className="sr-only">{title}: </span>
               {shot.alt}
             </figcaption>
           </figure>

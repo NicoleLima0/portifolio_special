@@ -14,6 +14,9 @@
 }
 
 html {
+  // Site é light-only por design. Declarar isso evita que extensões de dark mode
+  // (ex.: Dark Reader) reescrevam cores/atributos inline e quebrem a hidratação.
+  color-scheme: only light;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -181,4 +184,48 @@ ol {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
   }
+}
+
+.hero-stage {
+  position: relative;
+  background: var(--black);
+}
+
+// ---------------------------------------------------------------------------
+// Scrollbar: praticamente invisível, só um fio que aparece ao interagir.
+// ---------------------------------------------------------------------------
+html {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+
+html:hover,
+html:focus-within {
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  transition: background 0.3s ease;
+}
+
+html:hover ::-webkit-scrollbar-thumb,
+html:focus-within ::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.16);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.32);
 }

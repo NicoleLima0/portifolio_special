@@ -45,7 +45,8 @@
   background: #111;
 
   img {
-    object-fit: cover;
+    // Screenshot inteiro, sem corte lateral (ver nota em case.module.scss).
+    object-fit: contain;
   }
 }
 

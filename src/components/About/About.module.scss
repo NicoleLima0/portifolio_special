@@ -5,14 +5,26 @@
 
 .about {
   position: relative;
-  // O topo é bem menor que o padrão de seção: logo depois da transição do Hero (que já pina a
-  // tela e acaba em preto), um padding-top grande aqui somava a mais um trecho de preto vazio
-  // antes do título "Sobre" aparecer — dava a sensação de tela travada. A base mantém o respiro
-  // padrão para separar do Works.
-  padding-top: 5px;
+  // Fluxo normal: o Sobre vem logo depois do hero, sem sobreposição. (Já teve margem negativa
+  // de -100vh, z-index e pointer-events condicionais para a "cortina" que subia por cima do
+  // hero pinado — tudo isso saiu junto com a transição.)
+  padding-top: map.get($space, 'section');
   padding-bottom: map.get($space, 'section');
-  background: var(--black); // preto limpo, sem imagem atrás
+  background: var(--black);
   color: #ffffff;
+
+  // A transição leve entre hero e Sobre: a seção chega subindo um pouco e aparecendo. O
+  // `data-reveal` é ligado pelo About.tsx quando a seção entra na viewport.
+  opacity: 0;
+  transform: translateY(2.5rem);
+  transition:
+    opacity 0.7s ease-out,
+    transform 0.7s ease-out;
+
+  &[data-reveal='in'] {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .about__inner {
@@ -25,11 +37,15 @@
 
 .about__eyebrow {
   @include eyebrow;
-  // 2.5rem deixava só ~38-40px entre o eyebrow e a frase — pequeno demais pro desenho da
-  // Etapa 4 ter presença de verdade ali (a 1ª tentativa, ~86px, ainda saiu minúscula e sem
-  // graça). Este respiro é bem maior de propósito: o desenho precisa de espaço para ser GRANDE,
-  // não só "caber sem tocar em nada".
-  margin-bottom: clamp(4rem, 14vw, 11rem);
+  // Este respiro existe para o desenho da Etapa 4 (`.about__flair-svg`, ancorado acima da
+  // primeira linha do texto) ter espaço para ser GRANDE. Mas o valor anterior
+  // (`clamp(4rem, 14vw, 11rem)`, ~180px em tela cheia) empurrava o título para fora da
+  // primeira tela justamente no momento em que a cortina termina — e o critério é eyebrow,
+  // título e começo do texto visíveis juntos, sem rolar.
+  //
+  // O teto agora é 3rem, e o desenho acompanha: ele é dimensionado em `em` da fonte do texto,
+  // então continua proporcional, só mais contido.
+  margin-bottom: clamp(1.5rem, 4vw, 3rem);
   color: var(--muted);
 }
 
@@ -120,10 +136,11 @@
   // precedência sobre width quando é menor). `max-width: none` neutraliza isso especificamente
   // aqui, sem mexer na regra global (que existe para não deixar imagens vazarem em outro lugar).
   max-width: none;
-  // Medido (1440px): o gap entre o eyebrow e a linha 1 é ~174px — 1.85em × 72px(4.5rem) ≈ 133px
-  // cabe com folga real (a v1, 3.5em/252px, estourava; e a v2 tentava caber ACIMA de uma
-  // palavra específica, que tinha só ~38px de sobra em outra posição).
-  width: 1.85em;
+  // O gap acima da linha 1 encolheu (o eyebrow agora usa no máximo 3rem, para o título caber
+  // na primeira tela junto com a cortina), então o desenho encolhe na mesma proporção: a
+  // ~0.62em × 72px(4.5rem) ≈ 45px ele cabe no respiro novo sem encostar no eyebrow. Continua
+  // em `em` da fonte do texto, logo escala sozinho em qualquer largura.
+  width: 0.62em;
   height: auto;
   overflow: visible;
   pointer-events: none;
@@ -145,18 +162,20 @@
   pointer-events: none;
 }
 
-// Sem movimento: o desenho não é desenhado, mas também não pode simplesmente sumir — ele faz
-// parte da composição. Aparece pronto e estático.
+// Sem movimento o JS do About não roda: ninguém marca `data-reveal="in"`, logo a seção
+// precisa nascer visível aqui — sem isto ela ficaria permanentemente em opacity 0. O desenho e
+// a frase, pelo mesmo motivo, aparecem prontos e estáticos.
 @include reduced-motion {
+  .about {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
   .about__flair-svg {
     opacity: 1;
   }
-}
 
-// Sem movimento: a frase já é branca e estática por padrão, então basta neutralizar os
-// estados iniciais que o JS aplicaria (o matchMedia(MOTION_OK) nem roda, mas garante o caso
-// de o split existir por algum outro caminho).
-@include reduced-motion {
   .about__char {
     opacity: 1 !important;
     transform: none !important;

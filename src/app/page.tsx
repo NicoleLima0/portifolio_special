@@ -1,6 +1,5 @@
 import { ViewTransition } from 'react';
 import Hero from '@/components/Hero/Hero';
-import HeroStage from '@/components/HeroStage/HeroStage';
 import About from '@/components/About/About';
 import Services from '@/components/Services/Services';
 import Works from '@/components/Works/Works';
@@ -14,6 +13,7 @@ const personJsonLd = {
   jobTitle: site.role,
   url: site.url,
   email: `mailto:${site.email}`,
+  telephone: `+${site.whatsapp}`,
   sameAs: Object.values(site.socials),
   knowsAbout: ['Desenvolvimento web', 'Landing pages', 'Sistemas sob medida'],
 };
@@ -33,9 +33,10 @@ export default function Home() {
         default="none"
       >
         <main>
-          <HeroStage>
+          {/* O hero pinta o próprio branco; o preto aqui cobre a borda enquanto ele monta. */}
+          <div className="hero-stage">
             <Hero />
-          </HeroStage>
+          </div>
           <About />
           <Services />
           <Works />

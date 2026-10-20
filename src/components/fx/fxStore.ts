@@ -6,8 +6,6 @@
  * desenha no gsap.ticker. Nada disso passa por estado do React.
  */
 export const fx = {
-  /** Transição hero → preto. grow: gota cresce da emenda e cobre a tela; shrink: vira o glow do cursor. */
-  transition: { grow: 0, shrink: 0 },
   /** Glow iridescente discreto seguindo o cursor sobre as seções pretas. */
   glow: { enabled: false },
   /** Thumbnail flutuante de Trabalhos. */

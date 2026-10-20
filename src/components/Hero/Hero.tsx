@@ -8,8 +8,8 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import FluidCanvas from './FluidCanvas';
 import InkCanvas, { HERO_WORD, type IntroLetter } from './InkCanvas';
 import { createCoverage, useHeroLoop, type Coverage } from './heroFrame';
-import { useHeroSuspended } from '@/components/HeroStage/heroSuspend';
 import { useIntroGate } from '@/components/Intro/introGate';
+import { whatsappUrl } from '@/lib/site';
 import styles from './Hero.module.scss';
 
 export default function Hero() {
@@ -17,11 +17,10 @@ export default function Hero() {
   const pointer = usePointer(rootRef);
   const inView = useInView(rootRef);
   const reducedMotion = useReducedMotion();
-  const suspended = useHeroSuspended(); // transição já cobriu o hero de preto
   const introDone = useIntroGate(); // intro ainda cobrindo a tela: não desenhar por baixo
-  const running = inView && !reducedMotion && !suspended && introDone;
+  const running = inView && !reducedMotion && introDone;
 
-  // Um só loop para as duas camadas; parado fora da viewport, com reduced motion e sob a transição.
+  // Um só loop para as duas camadas; parado fora da viewport e com reduced motion.
   const loop = useHeroLoop(running);
   const coverageRef = useRef<Coverage | null>(null);
   if (!coverageRef.current) coverageRef.current = createCoverage();
@@ -62,7 +61,6 @@ export default function Hero() {
         root.removeAttribute('data-intro');
         introRef.current = intro;
         if (nameReadyRef.current && introDoneRef.current) intro.play();
-        // (A saída da UI no scroll agora faz parte da transição, em HeroStage.)
 
         return () => {
           introRef.current = null;
@@ -103,7 +101,7 @@ export default function Hero() {
       </noscript>
 
       <h1 id="hero-title" className="sr-only">
-        Nicole — desenvolvedora
+        Nicole, desenvolvedora
       </h1>
 
       <FluidCanvas pointer={pointer} coverage={coverage} loop={loop} reducedMotion={reducedMotion} />
@@ -132,7 +130,13 @@ export default function Hero() {
               </span>
             </p>
             <span className={`${styles.hero__mask} ${styles['hero__mask--pill']}`}>
-              <a className={styles.hero__cta} href="#contato" data-hero-intro>
+              <a
+                className={styles.hero__cta}
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-hero-intro
+              >
                 agende uma conversa
                 <span className={styles['hero__cta-arrow']} aria-hidden="true">
                   →

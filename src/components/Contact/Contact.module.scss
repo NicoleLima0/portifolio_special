@@ -19,7 +19,7 @@
 .contact__eyebrow {
   @include eyebrow;
   margin-bottom: 1.25rem;
-  color: var(--ink-soft);
+  color: var(--muted);
 }
 
 .contact__title {
@@ -31,31 +31,8 @@
 .contact__lead {
   max-width: 40ch;
   margin-bottom: 2.5rem;
-  color: var(--ink-soft);
+  color: var(--muted);
   font-size: clamp(1.05rem, 1.5vw, 1.25rem);
-}
-
-.contact__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6em;
-  padding: 1em 1.6em;
-  border-radius: map.get($radius, 'pill');
-  background: var(--ink);
-  color: var(--bg-deep);
-  font-size: 1.0625rem;
-  font-weight: 600;
-
-  @include hover {
-    .contact__cta-arrow {
-      transform: translateX(0.4em);
-    }
-  }
-}
-
-.contact__cta-arrow {
-  display: inline-block;
-  transition: transform 0.4s $ease-out;
 }
 
 .contact__socials {
@@ -67,7 +44,7 @@
 
 .contact__social {
   @include eyebrow;
-  color: var(--ink-soft);
+  color: var(--muted);
   transition: color 0.3s;
 
   @include hover {
@@ -85,5 +62,5 @@
   margin-top: map.get($space, 'section');
   padding-block: 2rem;
   border-top: 1px solid var(--line);
-  color: var(--ink-soft);
+  color: var(--muted);
 }

@@ -44,51 +44,17 @@ uniform highp vec4 uRect;
 uniform highp vec2 uView;
 uniform float uTime;
 uniform float uShift;
-uniform float uMode;     // 0 = gota da transição, 1 = glow (aditivo), 2 = card de preview
-uniform float uRadius;   // gota/glow: raio em px; card: raio do canto
-uniform float uFill;     // gota: miolo preto (0..1)
+uniform float uRadius;   // raio do glow, em px
 uniform float uAlpha;
-uniform float uEdge;     // gota: largura da borda iridescente (px)
-uniform vec2 uVel;       // velocidade do cursor (px/frame, y para cima)
 ${IRIDESCENCE}
 void main(){
   vec2 p = (vUv - 0.5) * uRect.zw; // px a partir do centro do quad
 
-  if (uMode < 0.5) {
-    // Gota: disco com borda viva e irregular; o miolo entrega o preto.
-    float ang = atan(p.y, p.x);
-    float wob = (noise(vec2(ang * 1.6 + 10.0, uTime * 0.5)) - 0.5) * uRadius * 0.10
-              + (noise(p * 0.006 + uTime * 0.25) - 0.5) * uEdge * 0.9;
-    float d = length(p) - uRadius + wob;
-    float cover = 1.0 - smoothstep(-1.5, 1.5, d);
-    if (cover <= 0.0) discard;
-    float ring = smoothstep(-uEdge, -uEdge * 0.25, d);
-    float a = cover * uAlpha;
-    if (ring < 0.002) { gl_FragColor = vec4(0.0, 0.0, 0.0, uFill * a); return; }
-    vec3 col = iris(p / 520.0, uTime, uShift) * ring;
-    gl_FragColor = vec4(col * a, max(ring, uFill) * a);
-  } else if (uMode < 1.5) {
-    // Glow: só soma luz (alpha 0 com blend ONE, ONE_MINUS_SRC_ALPHA) — não escurece o texto.
-    float d = length(p) / uRadius;
-    float a = exp(-d * d * 2.6) * uAlpha;
-    if (a < 0.002) discard;
-    gl_FragColor = vec4(iris(p / 420.0, uTime, uShift) * a, 0.0);
-  } else {
-    // Card: retângulo arredondado que "entorta" com a velocidade do cursor.
-    // O shear usa o MENOR lado nos dois eixos: com uRect.w/uRect.z o mesmo movimento diagonal
-    // deformava mais num eixo que no outro só por causa do aspect ratio.
-    vec2 v = clamp(uVel / 40.0, -1.0, 1.0);
-    float shear = min(uRect.z, uRect.w) * 0.2;
-    vec2 s = p;
-    s.x -= v.x * (vUv.y - 0.5) * shear;
-    s.y -= v.y * (vUv.x - 0.5) * shear;
-    vec2 halfSize = uRect.zw * 0.42; // o quad tem folga para a deformação ('half' é reservado em GLSL)
-    vec2 q = abs(s) - (halfSize - uRadius);
-    float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
-    float a = clamp(0.5 - d, 0.0, 1.0) * uAlpha;
-    if (a <= 0.0) discard;
-    gl_FragColor = vec4(iris(s / 300.0 + uShift * 3.0, uTime, uShift) * a, a);
-  }
+  // Só soma luz (alpha 0 com blend ONE, ONE_MINUS_SRC_ALPHA): não escurece o texto por baixo.
+  float d = length(p) / uRadius;
+  float a = exp(-d * d * 2.6) * uAlpha;
+  if (a < 0.002) discard;
+  gl_FragColor = vec4(iris(p / 420.0, uTime, uShift) * a, 0.0);
 }
 `;
 

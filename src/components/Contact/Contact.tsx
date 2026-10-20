@@ -3,7 +3,8 @@
 import { useRef } from 'react';
 import { gsap, MOTION_OK, useGSAP } from '@/lib/gsap';
 import SplitHeading from '@/components/ui/SplitHeading';
-import { site } from '@/lib/site';
+import SparkButton from '@/components/ui/SparkButton';
+import { site, whatsappUrl } from '@/lib/site';
 import styles from './Contact.module.scss';
 
 const SOCIALS = [
@@ -39,15 +40,12 @@ export default function Contact() {
         <SplitHeading id="contato-title" className={styles.contact__title} text="Bora tirar sua ideia do papel?" />
 
         <p className={styles.contact__lead} data-fade>
-          Me conta o que você precisa. Eu respondo rápido, com um caminho claro e sem enrolação.
+          Me conta o que você precisa. Respondo rápido, com um caminho claro.
         </p>
 
-        <a className={styles.contact__cta} href={`mailto:${site.email}`} data-fade>
+        <SparkButton href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-fade>
           Vamos conversar
-          <span className={styles['contact__cta-arrow']} aria-hidden="true">
-            →
-          </span>
-        </a>
+        </SparkButton>
 
         <ul className={styles.contact__socials} data-fade>
           {SOCIALS.map((social) => (
