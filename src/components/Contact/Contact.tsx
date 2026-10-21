@@ -66,11 +66,9 @@ export default function Contact() {
         {/* Caminho pelo qual o Google chega na página local; o texto do link é um dos
             sinais mais fortes do que ela trata. */}
         <Link className={styles.contact__local} href="/criacao-de-sites-teresopolis">
-          Criação de sites em {site.city}
+          Sites em {site.city}
         </Link>
-        <span>
-          {site.role} · {site.city}, {site.region}
-        </span>
+        <span>{site.role}</span>
       </footer>
     </section>
   );

@@ -1,5 +1,3 @@
-import { site } from './site';
-
 export type Service = {
   title: string;
   text: string;
@@ -12,13 +10,9 @@ export type Service = {
 // por item da mesma lista — dado estruturado que não bate com o texto visível é penalizado.
 export const SERVICES: Service[] = [
   {
-    title: 'Criação de sites e landing pages',
-    text: `Sites rápidos que transformam visita em cliente e colocam sua empresa nas buscas de ${site.city}.`,
-    items: [
-      'Sites institucionais e landing pages',
-      `SEO local: aparecer no Google de ${site.city}`,
-      'Performance, Core Web Vitals e mobile',
-    ],
+    title: 'Sites & landing pages',
+    text: 'Páginas rápidas que transformam visita em cliente e aparecem no Google.',
+    items: ['Landing pages de lançamento', 'Sites institucionais', 'SEO técnico e performance'],
     phase: 0,
   },
   {

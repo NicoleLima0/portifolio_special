@@ -6,7 +6,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 const TAGLINE = ['Não é só código, é resultado.', 'Sites e produtos que vendem.'];
-const FOOTER_LEFT = `desenvolvedora · ${site.city}, ${site.region}`;
+const FOOTER_LEFT = 'desenvolvedora · freelancer';
 const FOOTER_RIGHT = site.url.replace(/^https?:\/\//, '');
 
 // Baixa só os glifos usados (subset via `text=`) — o card é gerado no build.

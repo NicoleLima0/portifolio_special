@@ -22,21 +22,12 @@ export async function generateMetadata({ params }: PageProps<'/trabalhos/[slug]'
   if (!work) return {};
 
   // O tipo de projeto ganha mais buscas do que "Título | Cliente", que só acha quem já
-  // conhece o nome. A cidade entra só quando o cliente é de lá: anunciá-la num projeto de
-  // outra praça é impreciso, e isso derruba o resultado em vez de ajudar.
-  const isLocal = work.client.includes(site.city);
-  const title = isLocal
-    ? `${work.title} — ${work.tag} em ${site.city}`
-    : `${work.title} — ${work.tag}`;
+  // conhece o nome.
+  const title = `${work.title} — ${work.tag}`;
   return {
     title,
-    description: `${work.summary} Projeto de ${site.name}, desenvolvedora em ${site.city}, ${site.region}.`,
-    keywords: [
-      ...work.disciplines,
-      ...work.stack,
-      ...(isLocal ? [`${work.tag} ${site.city}`] : []),
-      site.brand,
-    ],
+    description: work.summary,
+    keywords: [...work.disciplines, ...work.stack, site.brand],
     alternates: { canonical: `/trabalhos/${slug}` },
     openGraph: {
       type: 'article',

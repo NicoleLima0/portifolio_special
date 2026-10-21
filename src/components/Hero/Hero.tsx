@@ -101,10 +101,9 @@ export default function Hero() {
       </noscript>
 
       {/* O nome do hero é pintado em canvas, então o H1 — o que o Google lê como assunto
-          da página — vive aqui, com a palavra-chave e a cidade. */}
+          da página — vive aqui. */}
       <h1 id="hero-title" className="sr-only">
-        Nicole Lima — desenvolvedora de sites em Teresópolis, RJ. Criação de sites, landing
-        pages e sistemas sob medida.
+        Nicole Lima — desenvolvedora de sites, landing pages e sistemas sob medida
       </h1>
 
       <FluidCanvas pointer={pointer} coverage={coverage} loop={loop} reducedMotion={reducedMotion} />
@@ -165,7 +164,7 @@ export default function Hero() {
         <div className={styles.hero__bottom} data-hero-ui>
           <span className={styles.hero__mask}>
             <span className={styles.hero__rise} data-hero-intro>
-              desenvolvedora · Teresópolis, RJ
+              desenvolvedora · freelancer
             </span>
           </span>
           <span className={styles.hero__mask}>
