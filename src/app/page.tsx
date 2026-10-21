@@ -4,26 +4,15 @@ import About from '@/components/About/About';
 import Services from '@/components/Services/Services';
 import Works from '@/components/Works/Works';
 import Contact from '@/components/Contact/Contact';
-import { site } from '@/lib/site';
-
-const personJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: site.name,
-  jobTitle: site.role,
-  url: site.url,
-  email: `mailto:${site.email}`,
-  telephone: `+${site.whatsapp}`,
-  sameAs: Object.values(site.socials),
-  knowsAbout: ['Desenvolvimento web', 'Landing pages', 'Sistemas sob medida'],
-};
+import { homeGraph, jsonLdHtml } from '@/lib/jsonLd';
+import { SERVICES } from '@/lib/services';
 
 export default function Home() {
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(homeGraph(SERVICES)) }}
       />
       {/* Mesmo wrapper direcional do case: a home desliza para fora ao abrir um projeto e
           volta ao lugar no retorno. Precisa estar na page — no layout, enter/exit não disparam. */}

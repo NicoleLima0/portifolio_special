@@ -12,18 +12,24 @@ export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
     default: site.title,
-    template: `%s | ${site.name}`,
+    template: `%s | ${site.brand}`,
   },
   description: site.description,
-  applicationName: site.name,
+  keywords: [...site.keywords],
+  applicationName: site.brand,
   authors: [{ name: site.name, url: site.url }],
   creator: site.name,
-  alternates: { canonical: '/' },
+  publisher: site.brand,
+  category: 'technology',
+  alternates: {
+    canonical: '/',
+    languages: { 'pt-BR': '/' },
+  },
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
     url: '/',
-    siteName: site.name,
+    siteName: site.brand,
     title: site.title,
     description: site.description,
   },
@@ -32,9 +38,24 @@ export const metadata: Metadata = {
     title: site.title,
     description: site.description,
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      // Sem limite de snippet/preview: deixa o Google montar o resultado mais rico que
+      // conseguir, em vez de cortar no padrão conservador.
+      'max-snippet': -1,
+      'max-image-preview': 'large',
+      'max-video-preview': -1,
+    },
+  },
+  // String vazia emitiria uma meta vazia no <head>.
+  ...(site.googleSiteVerification
+    ? { verification: { google: site.googleSiteVerification } }
+    : {}),
 };
-
 export const viewport: Viewport = {
   themeColor: '#ffffff',
   colorScheme: 'only light',

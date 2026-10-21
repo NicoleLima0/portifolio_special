@@ -3,30 +3,10 @@
 import { useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { gsap, MOTION_OK, ScrollTrigger, useGSAP } from '@/lib/gsap';
 import { fx } from '@/components/fx/fxStore';
+import { SERVICES } from '@/lib/services';
 import styles from './Services.module.scss';
 
 const HOVER = '(hover: hover) and (pointer: fine)';
-
-const SERVICES = [
-  {
-    title: 'Sites & landing pages',
-    text: 'Páginas rápidas que transformam visita em cliente e aparecem no Google.',
-    items: ['Landing pages de lançamento', 'Sites institucionais', 'SEO técnico e performance'],
-    phase: 0,
-  },
-  {
-    title: 'Sistemas sob medida',
-    text: 'Painéis, áreas de cliente e automações que tiram o trabalho manual do seu dia.',
-    items: ['Painéis e áreas de cliente', 'Integrações e automações', 'Agendamentos e pagamentos'],
-    phase: 0.33,
-  },
-  {
-    title: 'Cuidado contínuo',
-    text: 'Depois do lançamento eu fico por perto: ajustes, melhorias e tudo no ar sem susto.',
-    items: ['Manutenção e evolução', 'Monitoramento e backups', 'Melhorias guiadas por dados'],
-    phase: 0.66,
-  },
-];
 
 export default function Services() {
   const rootRef = useRef<HTMLElement>(null);

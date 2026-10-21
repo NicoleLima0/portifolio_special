@@ -1,0 +1,309 @@
+@use 'sass:map';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+@use '../../styles/breakpoints' as *;
+
+.local {
+  @include container;
+  padding-block: clamp(5rem, 12vw, 9rem) map.get($space, 'section');
+  background: var(--black);
+  color: var(--ink);
+}
+
+.local__crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2.5rem;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+
+  a {
+    color: var(--muted);
+    text-decoration: none;
+
+    @include hover {
+      color: var(--white);
+    }
+  }
+}
+
+.local__head {
+  max-width: 54rem;
+  padding-bottom: clamp(3rem, 8vw, 5rem);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.local__eyebrow {
+  @include eyebrow;
+  margin-bottom: 1.25rem;
+  color: var(--magenta);
+}
+
+.local__title {
+  margin-bottom: 1.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 7vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.local__lead {
+  max-width: 48ch;
+  margin-bottom: 2.5rem;
+  color: var(--muted);
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  line-height: 1.6;
+}
+
+.local__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.75rem;
+  border-radius: map.get($radius, 'pill');
+  background: var(--white);
+  color: var(--black);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.4s $ease-out, background-color 0.3s ease;
+
+  @include hover {
+    background: var(--chrome-2);
+    transform: translateY(-2px);
+  }
+
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+.local__section {
+  padding-block: clamp(3.5rem, 9vw, 6rem);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.local__h2 {
+  max-width: 28ch;
+  margin-bottom: 2rem;
+  font-family: var(--font-heading);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.local__text {
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.3vw, 1.15rem);
+  line-height: 1.7;
+}
+
+// ---- Serviços ----
+
+.local__cards {
+  display: grid;
+  gap: 1.25rem;
+  list-style: none;
+
+  @include up('md') {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card {
+  padding: 1.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: map.get($radius, 'card');
+}
+
+.card__title {
+  margin-bottom: 0.85rem;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.card__text {
+  margin-bottom: 1.25rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.card__items {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  font-size: 0.9rem;
+
+  li {
+    padding-left: 1rem;
+    color: var(--muted);
+    text-indent: -1rem;
+
+    &::before {
+      margin-right: 0.5rem;
+      color: var(--violet);
+      content: '—';
+    }
+  }
+}
+
+// ---- Região ----
+
+.local__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 2rem;
+  list-style: none;
+
+  li {
+    padding: 0.45rem 0.95rem;
+    border: 1px solid var(--line-strong);
+    border-radius: map.get($radius, 'pill');
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+  }
+}
+
+// ---- Projetos ----
+
+.local__works {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+}
+
+.work {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--line-strong);
+  color: inherit;
+  text-decoration: none;
+  transition: padding-inline-start 0.4s $ease-out;
+
+  @include hover {
+    padding-inline-start: 1rem;
+  }
+
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+.work__tag {
+  @include eyebrow;
+  color: var(--violet);
+}
+
+.work__title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.work__summary {
+  max-width: 54ch;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+// ---- FAQ ----
+
+.local__faq {
+  display: grid;
+  max-width: 62rem;
+}
+
+.faq {
+  border-top: 1px solid var(--line-strong);
+
+  &:last-child {
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  &[open] .faq__q::after {
+    transform: rotate(45deg);
+  }
+}
+
+.faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.35rem 0;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  line-height: 1.35;
+  list-style: none;
+
+  // Remove o triângulo nativo (Safari usa ::-webkit-details-marker).
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::after {
+    flex: none;
+    color: var(--muted);
+    content: '+';
+    font-size: 1.4rem;
+    transition: transform 0.35s $ease-out;
+  }
+
+  @include hover {
+    color: var(--white);
+  }
+
+  @include reduced-motion {
+    &::after {
+      transition: none;
+    }
+  }
+}
+
+.faq__a {
+  max-width: 68ch;
+  padding-bottom: 1.5rem;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+// ---- Fechamento ----
+
+.local__end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: clamp(3.5rem, 9vw, 6rem);
+
+  .local__text {
+    margin-bottom: 2.25rem;
+  }
+}
+
+.local__back {
+  margin-top: 2rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+
+  a {
+    color: var(--muted);
+
+    @include hover {
+      color: var(--white);
+    }
+  }
+}

@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import CaseGallery from '@/components/CaseGallery/CaseGallery';
 import Contact from '@/components/Contact/Contact';
 import { site } from '@/lib/site';
+import { caseGraph, jsonLdHtml } from '@/lib/jsonLd';
 import { findWork, nextWork, workNumber, WORKS } from '@/lib/works';
 import styles from './case.module.scss';
 
@@ -20,16 +21,28 @@ export async function generateMetadata({ params }: PageProps<'/trabalhos/[slug]'
   const work = findWork(slug);
   if (!work) return {};
 
-  const title = `${work.title} | ${work.client}`;
+  // O tipo de projeto ganha mais buscas do que "Título | Cliente", que só acha quem já
+  // conhece o nome. A cidade entra só quando o cliente é de lá: anunciá-la num projeto de
+  // outra praça é impreciso, e isso derruba o resultado em vez de ajudar.
+  const isLocal = work.client.includes(site.city);
+  const title = isLocal
+    ? `${work.title} — ${work.tag} em ${site.city}`
+    : `${work.title} — ${work.tag}`;
   return {
     title,
-    description: work.summary,
+    description: `${work.summary} Projeto de ${site.name}, desenvolvedora em ${site.city}, ${site.region}.`,
+    keywords: [
+      ...work.disciplines,
+      ...work.stack,
+      ...(isLocal ? [`${work.tag} ${site.city}`] : []),
+      site.brand,
+    ],
     alternates: { canonical: `/trabalhos/${slug}` },
     openGraph: {
       type: 'article',
       locale: 'pt_BR',
       url: `/trabalhos/${slug}`,
-      siteName: site.name,
+      siteName: site.brand,
       title,
       description: work.summary,
       // A capa do case é o card de compartilhamento (metadataBase resolve o caminho absoluto).
@@ -52,24 +65,11 @@ export default async function WorkCase({ params }: PageProps<'/trabalhos/[slug]'
   const next = nextWork(slug);
   const number = workNumber(slug);
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CreativeWork',
-    name: work.title,
-    headline: work.headline,
-    description: work.summary,
-    url: `${site.url}/trabalhos/${slug}`,
-    image: `${site.url}${work.cover}`,
-    dateCreated: work.year,
-    creator: { '@type': 'Person', name: site.name, url: site.url },
-    about: work.disciplines.join(', '),
-  };
-
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(caseGraph(work)) }}
       />
 
       {/* Direcional: entra deslizando ao vir da home, volta pelo outro lado no "voltar".

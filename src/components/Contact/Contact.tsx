@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Link from 'next/link';
 import { gsap, MOTION_OK, useGSAP } from '@/lib/gsap';
 import SplitHeading from '@/components/ui/SplitHeading';
 import SparkButton from '@/components/ui/SparkButton';
@@ -62,7 +63,14 @@ export default function Contact() {
         <span>
           © {new Date().getFullYear()} {site.name}
         </span>
-        <span>{site.role}</span>
+        {/* Caminho pelo qual o Google chega na página local; o texto do link é um dos
+            sinais mais fortes do que ela trata. */}
+        <Link className={styles.contact__local} href="/criacao-de-sites-teresopolis">
+          Criação de sites em {site.city}
+        </Link>
+        <span>
+          {site.role} · {site.city}, {site.region}
+        </span>
       </footer>
     </section>
   );

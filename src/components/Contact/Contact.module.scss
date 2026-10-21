@@ -64,3 +64,12 @@
   border-top: 1px solid var(--line);
   color: var(--muted);
 }
+
+.contact__local {
+  color: var(--muted);
+  text-decoration: none;
+
+  @include hover {
+    color: var(--white);
+  }
+}
