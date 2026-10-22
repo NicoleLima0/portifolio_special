@@ -1,0 +1,388 @@
+@use 'sass:map';
+@use '../../styles/tokens' as *;
+@use '../../styles/mixins' as *;
+@use '../../styles/breakpoints' as bp;
+
+// ---------------------------------------------------------------------------
+// Overlay: acima de tudo (o FxCanvas é z-index 40). Fundo escuro do projeto com um glow
+// azul/roxo da paleta — nenhuma cor nova.
+// ---------------------------------------------------------------------------
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: var(--bg-deep);
+  padding: max(env(safe-area-inset-top), 0px) max(env(safe-area-inset-right), 0px)
+    max(env(safe-area-inset-bottom), 0px) max(env(safe-area-inset-left), 0px);
+  cursor: wait;
+}
+
+// Glow: dois halos suaves da paleta, bem abertos. Só pintura, nunca animados.
+.intro__glow {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 38% at 28% 26%, rgba(166, 104, 255, 0.3) 0%, transparent 70%),
+    radial-gradient(38% 34% at 74% 68%, rgba(56, 232, 255, 0.18) 0%, transparent 72%);
+}
+
+// Camada do conteúdo: tudo que a timeline move vive aqui dentro.
+.intro__stage {
+  position: absolute;
+  inset: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Barra de busca
+// ---------------------------------------------------------------------------
+
+.search {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  z-index: 2;
+  width: min(92vw, 34rem);
+  transform: translate(-50%, -50%);
+  will-change: transform;
+
+  @include bp.up('md') {
+    width: min(70vw, 40rem);
+  }
+}
+
+.search__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.95rem 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: map.get($radius, 'pill');
+  // Vidro fosco + sombras em camadas: profundidade sem cor nova.
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1rem 2.5rem rgba(0, 0, 0, 0.45),
+    0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+  will-change: transform, opacity, filter;
+
+  @include bp.up('md') {
+    padding: 1.1rem 1.5rem;
+  }
+}
+
+.search__icon {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--muted);
+}
+
+.search__field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--white);
+  white-space: nowrap;
+
+  @include bp.up('md') {
+    font-size: 1.05rem;
+  }
+}
+
+.search__placeholder {
+  position: absolute;
+  inset-inline-start: 0;
+  color: var(--ink-soft);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.search__text {
+  // Overflow escondido: em telas estreitas a frase longa não empurra a lupa para fora.
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.search__caret {
+  flex: none;
+  width: 2px;
+  height: 1.15em;
+  margin-inline-start: 2px;
+  background: var(--violet);
+  border-radius: 1px;
+}
+
+// ---- Sugestões -------------------------------------------------------------
+
+.search__suggestions {
+  margin: 0.6rem 0 0;
+  padding: 0.4rem;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: map.get($radius, 'card');
+  background: rgba(20, 12, 32, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4);
+}
+
+.search__suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.65rem;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  will-change: transform, opacity;
+}
+
+// A primeira vem destacada: é a que a busca vai "usar".
+.search__suggestion--active {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--white);
+}
+
+.search__suggestion-icon {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  opacity: 0.6;
+}
+
+// ---------------------------------------------------------------------------
+// Resultados
+// ---------------------------------------------------------------------------
+
+.results {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  z-index: 1;
+  width: min(92vw, 34rem);
+  transform: translateX(-50%);
+
+  @include bp.up('md') {
+    width: min(70vw, 40rem);
+  }
+}
+
+// Card em destaque: é o alvo do Flip.
+.result {
+  position: relative;
+  display: block;
+  padding: 1.25rem 1.4rem;
+  border-radius: map.get($radius, 'card');
+  overflow: hidden;
+  isolation: isolate;
+  will-change: transform, opacity, filter;
+
+  @include bp.up('md') {
+    padding: 1.5rem 1.75rem;
+  }
+}
+
+// Fundo do card, irmão do conteúdo: o Flip o leva de vidro escuro ao branco do hero.
+.result__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 1.25rem 3rem rgba(0, 0, 0, 0.5),
+    0 0.3rem 1rem rgba(0, 0, 0, 0.3);
+}
+
+.result__content {
+  position: relative;
+  display: grid;
+  gap: 0.3rem;
+  will-change: opacity;
+}
+
+.result__url {
+  @include eyebrow;
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  color: var(--cyan);
+}
+
+.result__title {
+  margin: 0;
+  font-family: var(--font-heading), system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--white);
+  // O underline do hover entra por aqui (sem reflow).
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color 0.25s $ease-out;
+
+  @include bp.up('md') {
+    font-size: 1.2rem;
+  }
+}
+
+// Estado de hover aplicado pela timeline (não por :hover — não há ponteiro real aqui).
+.result[data-hovered='true'] .result__title {
+  text-decoration-color: var(--white);
+}
+
+.result__desc {
+  margin: 0;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  // Exatamente 2 linhas, como num resultado de busca.
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Onda do clique.
+.result__ripple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+// ---- Resultados genéricos (skeletons) --------------------------------------
+
+.skeletons {
+  display: grid;
+  gap: 1.35rem;
+  margin-top: 1.5rem;
+  padding-inline: 1.4rem;
+
+  @include bp.up('md') {
+    padding-inline: 1.75rem;
+  }
+}
+
+.skeleton {
+  display: grid;
+  gap: 0.45rem;
+  will-change: transform, opacity, filter;
+}
+
+.skeleton__line {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--ink-dim);
+}
+
+.skeleton__line--url {
+  width: 28%;
+  height: 0.4rem;
+  background: rgba(56, 232, 255, 0.22);
+}
+
+.skeleton__line--title {
+  width: 62%;
+  height: 0.75rem;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.skeleton__line--short {
+  width: 45%;
+}
+
+// ---------------------------------------------------------------------------
+// Cursor
+// ---------------------------------------------------------------------------
+
+.cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  width: 1.65rem;
+  height: 1.65rem;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.cursor__arrow {
+  width: 100%;
+  height: 100%;
+  color: var(--white);
+  filter: drop-shadow(0 0.35rem 0.75rem rgba(0, 0, 0, 0.55));
+  will-change: transform;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Botão "pular": único elemento acessível do overlay (o resto é aria-hidden).
+// ---------------------------------------------------------------------------
+
+.intro__skip {
+  @include eyebrow;
+  position: absolute;
+  right: map.get($space, 'gutter');
+  bottom: clamp(1.25rem, 3vw, 2.25rem);
+  z-index: 10;
+  padding: 0.7em 1.2em;
+  border: 1px solid var(--line-strong);
+  border-radius: map.get($radius, 'pill');
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color 0.3s $ease-out,
+    border-color 0.3s $ease-out;
+
+  @include hover {
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  // Foco bem visível: é o único alvo de teclado na tela.
+  &:focus-visible {
+    color: var(--white);
+    border-color: var(--violet);
+    outline: 2px solid var(--violet);
+    outline-offset: 3px;
+  }
+}
