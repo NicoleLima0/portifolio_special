@@ -30,34 +30,285 @@
 }
 
 // Camada do conteúdo: tudo que a timeline move vive aqui dentro.
+// A perspectiva fica aqui (e não no notebook) para que tampa e base compartilhem o mesmo
+// ponto de fuga — é o que faz a dobradiça fechar certo.
 .intro__stage {
   position: absolute;
   inset: 0;
+  perspective: 1600px;
+  perspective-origin: 50% 44%;
+}
+
+// ---------------------------------------------------------------------------
+// Cena: cenário decorativo + notebook
+// ---------------------------------------------------------------------------
+
+.scene {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.scene__props {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+// Blobs: manchas de cor bem desfocadas da paleta. Dão o "ar" colorido do fundo.
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.blob--violet {
+  top: 8%;
+  left: 6%;
+  width: 34vw;
+  max-width: 28rem;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(166, 104, 255, 0.55) 0%, transparent 70%);
+}
+
+.blob--cyan {
+  right: 4%;
+  bottom: 12%;
+  width: 30vw;
+  max-width: 24rem;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(56, 232, 255, 0.4) 0%, transparent 70%);
+}
+
+.blob--magenta {
+  top: 52%;
+  left: 38%;
+  width: 26vw;
+  max-width: 20rem;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(255, 46, 151, 0.3) 0%, transparent 70%);
+}
+
+// Pontinhos de luz flutuando: dão escala e profundidade ao ar em volta do notebook.
+.mote {
+  position: absolute;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--white);
+  opacity: 0;
+  box-shadow: 0 0 1rem rgba(255, 255, 255, 0.8);
+  will-change: transform, opacity;
+}
+
+.mote--0 { top: 22%; left: 18%; }
+.mote--1 { top: 34%; right: 22%; width: 0.3rem; height: 0.3rem; }
+.mote--2 { bottom: 28%; left: 12%; width: 0.25rem; height: 0.25rem; }
+.mote--3 { top: 16%; right: 34%; width: 0.35rem; height: 0.35rem; }
+.mote--4 { bottom: 18%; right: 14%; }
+.mote--5 { top: 62%; left: 8%; width: 0.3rem; height: 0.3rem; }
+
+// Superfície sob o notebook: elipse borrada que faz as vezes de sombra/mesa.
+.scene__surface {
+  position: absolute;
+  bottom: 14%;
+  left: 50%;
+  width: min(86vw, 52rem);
+  height: 10rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55) 0%, transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+// ---------------------------------------------------------------------------
+// Notebook (100% CSS 3D, sem imagens)
+// ---------------------------------------------------------------------------
+
+.rig {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(88vw, 26rem);
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  will-change: transform;
+
+  @include bp.up('md') {
+    width: min(64vw, 46rem);
+  }
+}
+
+.lid {
+  position: relative;
+  // Dobradiça: a borda inferior da tampa é onde a base encosta.
+  transform-origin: 50% 100%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.lid__shell {
+  position: relative;
+  padding: 0.6rem 0.6rem 1.2rem;
+  border-radius: 0.9rem;
+  // Alumínio: claro na quina de cima, escuro embaixo — luz vindo de cima.
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.1) 18%,
+    rgba(255, 255, 255, 0.04) 55%,
+    rgba(255, 255, 255, 0.09) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.07),
+    0 2.5rem 5rem rgba(0, 0, 0, 0.6);
+
+  @include bp.up('md') {
+    padding: 0.75rem 0.75rem 1.5rem;
+    border-radius: 1.2rem;
+  }
+}
+
+// Câmera: o pontinho acima da tela que vende o notebook.
+.lid__camera {
+  position: absolute;
+  top: 0.28rem;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.3rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+// A TELA: é aqui que a busca inteira acontece.
+.screen {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 0.45rem;
+  background: var(--bg-deep);
+  // `container` para a UI lá dentro escalar junto com o notebook.
+  container-type: size;
+
+  @include bp.up('md') {
+    border-radius: 0.6rem;
+  }
+}
+
+.screen__inner {
+  position: absolute;
+  inset: 0;
+}
+
+// Reflexo diagonal no vidro. Some no mergulho.
+.screen__glare {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(
+    122deg,
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+// ---- Base (teclado + trackpad) --------------------------------------------
+
+.base {
+  position: relative;
+  // Deitada no "chão": é o que vende a profundidade do conjunto.
+  transform-origin: 50% 0%;
+  transform: rotateX(74deg);
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+.base__deck {
+  position: relative;
+  height: 0;
+  padding-bottom: 42%;
+  border-radius: 0 0 0.7rem 0.7rem;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.08) 42%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.base__keyboard {
+  position: absolute;
+  top: 12%;
+  left: 7%;
+  width: 86%;
+  height: 46%;
+  border-radius: 0.3rem;
+  background: rgba(0, 0, 0, 0.45);
+  // As "teclas": listras cruzadas, mais barato e mais limpo que 70 divs.
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 7.1%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 20%);
+  box-shadow: inset 0 0 1.5rem rgba(0, 0, 0, 0.6);
+}
+
+.base__trackpad {
+  position: absolute;
+  bottom: 9%;
+  left: 50%;
+  width: 30%;
+  height: 26%;
+  transform: translateX(-50%);
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+// Fio de luz na quina frontal do deck.
+.base__lip {
+  position: absolute;
+  right: 4%;
+  bottom: -2px;
+  left: 4%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.26) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Barra de busca
 // ---------------------------------------------------------------------------
 
+// A barra vive DENTRO da tela do notebook: tudo em cq* (unidades do container .screen),
+// então a UI escala junto com o mockup em qualquer viewport.
 .search {
   position: absolute;
-  top: 38%;
-  left: 50%;
+  top: 34cqh;
+  left: 50cqw;
   z-index: 2;
-  width: min(92vw, 34rem);
+  width: 82cqw;
   transform: translate(-50%, -50%);
   will-change: transform;
-
-  @include bp.up('md') {
-    width: min(70vw, 40rem);
-  }
 }
 
 .search__bar {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.95rem 1.25rem;
+  gap: 2cqw;
+  padding: 3.2cqh 4cqw;
   border: 1px solid var(--line-strong);
   border-radius: map.get($radius, 'pill');
   // Vidro fosco + sombras em camadas: profundidade sem cor nova.
@@ -69,16 +320,12 @@
     0 1rem 2.5rem rgba(0, 0, 0, 0.45),
     0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
   will-change: transform, opacity, filter;
-
-  @include bp.up('md') {
-    padding: 1.1rem 1.5rem;
-  }
 }
 
 .search__icon {
   flex: none;
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 4.2cqh;
+  height: 4.2cqh;
   color: var(--muted);
 }
 
@@ -89,14 +336,10 @@
   min-width: 0;
   flex: 1;
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 0.95rem;
+  font-size: 4.4cqh;
   line-height: 1.4;
   color: var(--white);
   white-space: nowrap;
-
-  @include bp.up('md') {
-    font-size: 1.05rem;
-  }
 }
 
 .search__placeholder {
@@ -125,8 +368,8 @@
 // ---- Sugestões -------------------------------------------------------------
 
 .search__suggestions {
-  margin: 0.6rem 0 0;
-  padding: 0.4rem;
+  margin: 2.4cqh 0 0;
+  padding: 1.4cqh;
   list-style: none;
   border: 1px solid var(--line);
   border-radius: map.get($radius, 'card');
@@ -139,11 +382,11 @@
 .search__suggestion {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.6rem 0.85rem;
+  gap: 2cqw;
+  padding: 2.2cqh 2.6cqw;
   border-radius: 0.65rem;
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 0.85rem;
+  font-size: 3.6cqh;
   color: var(--ink-soft);
   white-space: nowrap;
   overflow: hidden;
@@ -159,8 +402,8 @@
 
 .search__suggestion-icon {
   flex: none;
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 3.2cqh;
+  height: 3.2cqh;
   opacity: 0.6;
 }
 
@@ -168,32 +411,30 @@
 // Resultados
 // ---------------------------------------------------------------------------
 
+// Os resultados também vivem dentro da tela.
 .results {
   position: absolute;
-  top: 30%;
-  left: 50%;
+  top: 26cqh;
+  left: 50cqw;
   z-index: 1;
-  width: min(92vw, 34rem);
+  width: 82cqw;
   transform: translateX(-50%);
-
-  @include bp.up('md') {
-    width: min(70vw, 40rem);
-  }
 }
 
 // Card em destaque: é o alvo do Flip.
 .result {
-  position: relative;
+  // `absolute` (e nao `relative`): na expansao final o card e reposicionado/redimensionado
+  // para cobrir a tela, e isso precisa de um elemento fora do fluxo.
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
-  padding: 1.25rem 1.4rem;
-  border-radius: map.get($radius, 'card');
+  width: 100%;
+  padding: 3.6cqh 4cqw;
+  border-radius: 1.2rem;
   overflow: hidden;
   isolation: isolate;
   will-change: transform, opacity, filter;
-
-  @include bp.up('md') {
-    padding: 1.5rem 1.75rem;
-  }
 }
 
 // Fundo do card, irmão do conteúdo: o Flip o leva de vidro escuro ao branco do hero.
@@ -221,7 +462,7 @@
 
 .result__url {
   @include eyebrow;
-  font-size: 0.6875rem;
+  font-size: 2.8cqh;
   letter-spacing: 0.1em;
   text-transform: none;
   color: var(--cyan);
@@ -230,7 +471,7 @@
 .result__title {
   margin: 0;
   font-family: var(--font-heading), system-ui, sans-serif;
-  font-size: 1.05rem;
+  font-size: 4.6cqh;
   font-weight: 700;
   line-height: 1.25;
   color: var(--white);
@@ -239,10 +480,6 @@
   text-decoration-color: transparent;
   text-underline-offset: 0.18em;
   transition: text-decoration-color 0.25s $ease-out;
-
-  @include bp.up('md') {
-    font-size: 1.2rem;
-  }
 }
 
 // Estado de hover aplicado pela timeline (não por :hover — não há ponteiro real aqui).
@@ -253,7 +490,7 @@
 .result__desc {
   margin: 0;
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 0.85rem;
+  font-size: 3.4cqh;
   line-height: 1.5;
   color: var(--ink-soft);
   // Exatamente 2 linhas, como num resultado de busca.
@@ -270,9 +507,9 @@
   top: 0;
   left: 0;
   z-index: 1;
-  width: 2.5rem;
-  height: 2.5rem;
-  margin: -1.25rem 0 0 -1.25rem;
+  width: 8cqh;
+  height: 8cqh;
+  margin: -4cqh 0 0 -4cqh;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.22);
   opacity: 0;
@@ -282,38 +519,35 @@
 
 // ---- Resultados genéricos (skeletons) --------------------------------------
 
+// O card e `absolute`, entao os skeletons precisam comecar abaixo dele por conta propria.
 .skeletons {
   display: grid;
-  gap: 1.35rem;
-  margin-top: 1.5rem;
-  padding-inline: 1.4rem;
-
-  @include bp.up('md') {
-    padding-inline: 1.75rem;
-  }
+  gap: 4.5cqh;
+  margin-top: 30cqh;
+  padding-inline: 4cqw;
 }
 
 .skeleton {
   display: grid;
-  gap: 0.45rem;
+  gap: 1.6cqh;
   will-change: transform, opacity, filter;
 }
 
 .skeleton__line {
-  height: 0.5rem;
+  height: 1.8cqh;
   border-radius: 999px;
   background: var(--ink-dim);
 }
 
 .skeleton__line--url {
   width: 28%;
-  height: 0.4rem;
+  height: 1.4cqh;
   background: rgba(56, 232, 255, 0.22);
 }
 
 .skeleton__line--title {
   width: 62%;
-  height: 0.75rem;
+  height: 2.6cqh;
   background: rgba(255, 255, 255, 0.22);
 }
 
@@ -325,13 +559,14 @@
 // Cursor
 // ---------------------------------------------------------------------------
 
+// O cursor também vive dentro da tela: ele clica num resultado que está lá dentro.
 .cursor {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 5;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 7cqh;
+  height: 7cqh;
   pointer-events: none;
   opacity: 0;
   will-change: transform, opacity;

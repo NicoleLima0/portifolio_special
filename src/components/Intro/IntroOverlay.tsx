@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 // MotionPathPlugin não aparece aqui de propósito: o registro é central (src/lib/gsap.ts) e o
 // plugin é usado pela sintaxe `motionPath:` no tween, não pelo símbolo.
-import { Flip, gsap, ScrollTrigger } from '@/lib/gsap';
+import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { scrollState } from '@/lib/scroll';
 import { openIntroGate } from './introGate';
+import LaptopScene, { type SceneRefs } from './LaptopScene';
 import SearchBar, { type SearchBarRefs } from './SearchBar';
 import ResultCard, { type ResultRefs } from './ResultCard';
 import FakeCursor, { type CursorRefs } from './FakeCursor';
@@ -16,6 +17,7 @@ import {
   MOBILE_BP,
   REDUCED_FADE,
   RESULTS,
+  SCENE_IN,
   SHORT_TIMESCALE,
   SKIP_FADE,
   SUBMIT,
@@ -34,11 +36,8 @@ const SUGGESTION_LIST = [
 ] as const;
 
 /**
- * Intro "busca → clique → abre o portfólio".
- *
- * Uma timeline única: a barra de busca surge, o nome é digitado, os resultados entram, um cursor
- * percorre a curva até o resultado em destaque, clica, e o card cresce (Flip) até virar a página
- * — emendando no hero real por cross-fade.
+ * Intro: a busca acontece DENTRO da tela de um notebook em cena, e no fim a câmera entra na
+ * tela — o resultado clicado vira a página inteira, emendando no hero real.
  */
 export default function IntroOverlay({
   mode,
@@ -58,6 +57,14 @@ export default function IntroOverlay({
   const finishRef = useRef<() => void>(() => {});
   const tlRef = useRef<gsap.core.Timeline | null>(null);
 
+  const sceneRefs: SceneRefs = {
+    stage: useRef<HTMLDivElement>(null),
+    rig: useRef<HTMLDivElement>(null),
+    lid: useRef<HTMLDivElement>(null),
+    base: useRef<HTMLDivElement>(null),
+    screen: useRef<HTMLDivElement>(null),
+    props: useRef<HTMLDivElement>(null),
+  };
   const searchRefs: SearchBarRefs = {
     shell: useRef<HTMLDivElement>(null),
     bar: useRef<HTMLDivElement>(null),
@@ -84,7 +91,6 @@ export default function IntroOverlay({
     const lenis = scrollState.lenis;
     const prevOverflow = document.body.style.overflow;
 
-    // Trava o scroll enquanto o intro roda.
     lenis?.stop();
     document.body.style.overflow = 'hidden';
     window.scrollTo(0, 0);
@@ -96,7 +102,6 @@ export default function IntroOverlay({
       document.body.style.overflow = prevOverflow;
       lenis?.start();
       ScrollTrigger.refresh();
-      // Foco no h1 do hero (o nome visual vem do canvas).
       const h1 = document.querySelector<HTMLElement>('#hero-title');
       if (h1) {
         h1.setAttribute('tabindex', '-1');
@@ -106,12 +111,12 @@ export default function IntroOverlay({
     };
     finishRef.current = finish;
 
-    // gsap.context: tudo que for criado aqui dentro é revertido de uma vez no unmount.
+    // gsap.context: tudo criado aqui dentro é revertido de uma vez no unmount.
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ onComplete: finish });
       tlRef.current = tl;
 
-      // --- Reduced motion: sem digitação nem cursor, só um fade curto. -------------------
+      // --- Reduced motion: sem cena, digitação nem cursor. Só um fade curto. ---
       if (mode === 'reduced') {
         gsap.set(stageRef.current, { autoAlpha: 0 });
         tl.to(root, { autoAlpha: 0, duration: REDUCED_FADE, ease: 'power2.out' }, 0.1);
@@ -121,6 +126,11 @@ export default function IntroOverlay({
       // 2ª visita: a mesma encenação, acelerada para caber em ~1 s.
       if (mode === 'short') tl.timeScale(SHORT_TIMESCALE);
 
+      const scene = sceneRefs.stage.current;
+      const rig = sceneRefs.rig.current;
+      const lid = sceneRefs.lid.current;
+      const base = sceneRefs.base.current;
+      const screen = sceneRefs.screen.current;
       const bar = searchRefs.bar.current;
       const shell = searchRefs.shell.current;
       const textEl = searchRefs.text.current;
@@ -132,31 +142,92 @@ export default function IntroOverlay({
       const content = resultRefs.content.current;
       const cursor = cursorRefs.root.current;
       const arrow = cursorRefs.arrow.current;
-      if (!bar || !shell || !textEl || !caret || !suggestionsEl || !card || !list) return;
+      if (!rig || !lid || !screen || !bar || !shell || !textEl || !caret) return;
+      if (!suggestionsEl || !card || !list) return;
 
       const items = gsap.utils.toArray<HTMLElement>(suggestionsEl.children);
       const skeletons = gsap.utils.toArray<HTMLElement>('[data-intro-skeleton]', root);
+      const blobs = gsap.utils.toArray<HTMLElement>('[data-intro-prop]', root);
+      const motes = gsap.utils.toArray<HTMLElement>('[data-intro-mote]', root);
       const placeholder = root.querySelector<HTMLElement>('[data-intro-placeholder]');
       const ripple = root.querySelector<HTMLElement>('[data-intro-ripple]');
+      const glare = root.querySelector<HTMLElement>('[data-intro-glare]');
 
-      // Estados iniciais. Tudo que vai animar nasce explícito (blur 'none' não interpola).
+      // --- Estados iniciais (tudo explícito: 'none' não interpola para blur) --------------
       gsap.set(list, { autoAlpha: 0 });
       gsap.set(card, { autoAlpha: 0, y: RESULTS.yFrom, filter: `blur(${RESULTS.blurFrom}px)` });
       gsap.set(skeletons, { autoAlpha: 0, y: RESULTS.yFrom, filter: `blur(${RESULTS.blurFrom}px)` });
       gsap.set(items, { autoAlpha: 0, y: SUGGESTIONS.yFrom });
       gsap.set(suggestionsEl, { autoAlpha: 0 });
       gsap.set(bar, { autoAlpha: 0, scale: BAR_IN.scaleFrom, filter: `blur(${BAR_IN.blurFrom}px)` });
+      gsap.set(rig, { scale: SCENE_IN.rig.scaleFrom, y: SCENE_IN.rig.yFrom, autoAlpha: 0 });
+      // A tampa nasce quase fechada e abre até a inclinação de repouso.
+      gsap.set(lid, { rotateX: isMobile ? 0 : -42 });
 
-      // ---- Fase 1: a barra surge --------------------------------------------------------
+      // ---- Fase 0: a cena entra ---------------------------------------------------------
+      tl.to(rig, {
+        autoAlpha: 1,
+        scale: 1,
+        y: 0,
+        duration: SCENE_IN.rig.duration,
+        ease: SCENE_IN.rig.ease,
+      }, 0);
+
+      if (!isMobile) {
+        // A tampa "abre" até a inclinação de repouso.
+        tl.to(lid, {
+          rotateX: SCENE_IN.tiltDeg,
+          duration: SCENE_IN.rig.duration,
+          ease: SCENE_IN.rig.ease,
+        }, 0);
+      }
+
+      // Cenário: blobs e partículas aparecem com stagger.
+      tl.to(blobs, {
+        autoAlpha: 1,
+        duration: SCENE_IN.props.duration,
+        stagger: SCENE_IN.props.stagger,
+        ease: SCENE_IN.props.ease,
+      }, 0)
+        .to(motes, {
+          autoAlpha: 0.9,
+          duration: SCENE_IN.props.duration * 0.6,
+          stagger: SCENE_IN.props.stagger * 0.5,
+          ease: SCENE_IN.props.ease,
+        }, 0.2);
+
+      // Respiração do conjunto e das partículas: loops próprios, fora da timeline, para não
+      // alongarem a duração total. Vivem dentro do gsap.context, então o revert os mata.
+      gsap.to(rig, {
+        y: `+=${SCENE_IN.float.amount}`,
+        duration: SCENE_IN.float.duration,
+        ease: SCENE_IN.float.ease,
+        repeat: -1,
+        yoyo: true,
+        delay: SCENE_IN.rig.duration,
+      });
+      motes.forEach((m, i) => {
+        gsap.to(m, {
+          y: i % 2 === 0 ? -18 : 14,
+          x: i % 3 === 0 ? 10 : -8,
+          duration: 3 + (i % 4) * 0.7,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: i * 0.3,
+        });
+      });
+
+      // ---- Fase 1: a barra surge dentro da tela -----------------------------------------
       tl.to(bar, {
         autoAlpha: 1,
         scale: 1,
         filter: 'blur(0px)',
         duration: BAR_IN.duration,
         ease: BAR_IN.ease,
-      });
+      }, BAR_IN.start);
 
-      // Cursor de texto piscando durante a digitação (repeat próprio, fora da timeline).
+      // Cursor de texto piscando durante a digitação.
       const caretBlink = gsap.to(caret, {
         autoAlpha: 0,
         duration: TYPING.caret.duration,
@@ -166,32 +237,39 @@ export default function IntroOverlay({
       });
 
       // ---- Fase 2: digitação letra a letra ----------------------------------------------
-      // Ritmo humano: cada letra tem um intervalo próprio (jitter determinístico, sem Math.random
-      // para o replay ser sempre igual) e há uma pausa curta depois do nome.
+      // Ritmo humano: cada letra tem um intervalo próprio (variação determinística, sem
+      // Math.random, para o replay ser sempre igual) e há uma pausa curta depois do nome.
       const chars = Array.from(TYPING.query);
-      const base = TYPING.duration / chars.length;
+      const charStep = TYPING.duration / chars.length;
       let typed = '';
 
-      tl.call(() => {
-        if (placeholder) gsap.set(placeholder, { autoAlpha: 0 });
-      });
+      tl.addLabel('typing', BAR_IN.start + BAR_IN.duration * 0.7).call(
+        () => {
+          if (placeholder) gsap.set(placeholder, { autoAlpha: 0 });
+        },
+        undefined,
+        'typing',
+      );
 
       chars.forEach((ch, i) => {
-        // Senóide no índice: varia o ritmo de forma reproduzível.
         const wobble = Math.sin(i * 2.7) * TYPING.jitter;
-        const step = Math.max(0.012, base * (1 + wobble));
+        const step = Math.max(0.02, charStep * (1 + wobble));
         // Espaço depois de palavra respira um pouco mais, como digitação real.
-        const extra = ch === ' ' ? base * 0.4 : 0;
-        tl.call(() => {
-          typed += ch;
-          textEl.textContent = typed;
-        }, undefined, `+=${step + extra}`);
+        const extra = ch === ' ' ? charStep * 0.5 : 0;
+        tl.call(
+          () => {
+            typed += ch;
+            textEl.textContent = typed;
+          },
+          undefined,
+          `+=${step + extra}`,
+        );
 
         if (i === TYPING.pause.afterChars) tl.to({}, { duration: TYPING.pause.duration });
       });
 
       // Sugestões entram enquanto ainda digita.
-      tl.to(suggestionsEl, { autoAlpha: 1, duration: 0.2, ease: 'power2.out' }, SUGGESTIONS.start)
+      tl.to(suggestionsEl, { autoAlpha: 1, duration: 0.25, ease: 'power2.out' }, SUGGESTIONS.start)
         .to(
           items,
           {
@@ -205,10 +283,9 @@ export default function IntroOverlay({
         );
 
       // ---- Fase 3: "Enter" ---------------------------------------------------------------
-      tl.addLabel('submit')
+      tl.addLabel('submit', `+=${SUBMIT.hold}`)
         .call(() => caretBlink.pause(), undefined, 'submit')
         .to(caret, { autoAlpha: 0, duration: 0.1 }, 'submit')
-        // Pulso da barra: 1 → 1,02 → 1.
         .to(bar, {
           scale: SUBMIT.pulse.scale,
           duration: SUBMIT.pulse.duration,
@@ -219,7 +296,6 @@ export default function IntroOverlay({
           duration: SUBMIT.pulse.duration,
           ease: SUBMIT.pulse.ease,
         }, `submit+=${SUBMIT.pulse.duration}`)
-        // Sugestões saem.
         .to(items, {
           autoAlpha: 0,
           y: -6,
@@ -227,10 +303,10 @@ export default function IntroOverlay({
           stagger: SUBMIT.suggestionsOut.stagger,
           ease: SUBMIT.suggestionsOut.ease,
         }, 'submit')
-        .to(suggestionsEl, { autoAlpha: 0, duration: 0.2 }, 'submit+=0.1')
-        // A barra sobe para o topo.
+        .to(suggestionsEl, { autoAlpha: 0, duration: 0.25 }, 'submit+=0.12')
+        // A barra sobe para o topo DA TELA (unidades do container).
         .to(shell, {
-          top: isMobile ? '12%' : '14%',
+          top: '12cqh',
           duration: SUBMIT.rise.duration,
           ease: SUBMIT.rise.ease,
         }, `submit+=${SUBMIT.pulse.duration * 2}`);
@@ -238,7 +314,6 @@ export default function IntroOverlay({
       // ---- Fase 4: resultados ------------------------------------------------------------
       tl.addLabel('results')
         .set(list, { autoAlpha: 1 })
-        // O card e os skeletons entram juntos, em stagger.
         .to([card, ...skeletons], {
           autoAlpha: 1,
           y: 0,
@@ -249,24 +324,26 @@ export default function IntroOverlay({
         }, 'results');
 
       // ---- Fase 5: cursor, hover e clique ------------------------------------------------
-      tl.addLabel('click', '>-0.1');
+      tl.addLabel('click', `+=${RESULTS.hold}`);
 
-      // Ponto do clique: canto superior-esquerdo do card + um offset, para o ripple sair de onde
-      // o cursor "toca". Medido na hora (funções), então acompanha qualquer viewport.
+      // Ponto do clique, em coordenadas DA TELA (o cursor é filho dela).
       const clickPoint = () => {
+        const s = screen.getBoundingClientRect();
         const r = card.getBoundingClientRect();
-        return { x: r.left + r.width * 0.3, y: r.top + r.height * 0.42 };
+        return {
+          x: r.left - s.left + r.width * 0.3,
+          y: r.top - s.top + r.height * 0.42,
+        };
       };
 
       if (!isMobile && cursor && arrow) {
-        // Curva: entra pela direita, faz um arco e desacelera no card.
-        // Os pontos são medidos ao montar a timeline: durante o intro o scroll está travado e a
-        // viewport não muda, então não há ganho em recalcular a cada play.
+        // Curva: entra pela direita da tela, arqueia e desacelera no card.
         const p = clickPoint();
+        const sr = screen.getBoundingClientRect();
         const path = [
-          { x: window.innerWidth + 60, y: window.innerHeight * 0.72 },
-          { x: window.innerWidth * 0.72, y: window.innerHeight * 0.52 },
-          { x: p.x + 120, y: p.y + 70 },
+          { x: sr.width + 40, y: sr.height * 0.82 },
+          { x: sr.width * 0.74, y: sr.height * 0.62 },
+          { x: p.x + sr.width * 0.16, y: p.y + sr.height * 0.12 },
           { x: p.x, y: p.y },
         ];
 
@@ -279,7 +356,7 @@ export default function IntroOverlay({
       }
 
       // Hover do card: leve elevação + underline (via data-attr, não :hover).
-      tl.addLabel('hover', `click+=${isMobile ? 0 : CURSOR.travel.duration - 0.12}`)
+      tl.addLabel('hover', `click+=${isMobile ? 0 : CURSOR.travel.duration - 0.15}`)
         .call(() => card.setAttribute('data-hovered', 'true'), undefined, 'hover')
         .to(card, {
           y: CURSOR.hover.lift,
@@ -288,7 +365,7 @@ export default function IntroOverlay({
         }, 'hover');
 
       // O "clique": a seta encolhe e o ripple cresce do ponto tocado.
-      tl.addLabel('press', `hover+=${CURSOR.hover.duration}`);
+      tl.addLabel('press', `hover+=${CURSOR.hover.duration + CURSOR.dwell}`);
 
       if (!isMobile && arrow) {
         tl.to(arrow, {
@@ -305,14 +382,15 @@ export default function IntroOverlay({
 
       if (ripple) {
         tl.set(ripple, {
-          // Posiciona o ripple no ponto do clique, relativo ao card.
           x: () => {
             const r = card.getBoundingClientRect();
-            return clickPoint().x - r.left;
+            const s = screen.getBoundingClientRect();
+            return clickPoint().x - (r.left - s.left);
           },
           y: () => {
             const r = card.getBoundingClientRect();
-            return clickPoint().y - r.top;
+            const s = screen.getBoundingClientRect();
+            return clickPoint().y - (r.top - s.top);
           },
           scale: 0,
           autoAlpha: 1,
@@ -333,83 +411,126 @@ export default function IntroOverlay({
         }, `press+=${CURSOR.click.duration * 2}`);
       }
 
-      // ---- Fase 6: Flip do card até a viewport -------------------------------------------
-      tl.addLabel('expand', `press+=${CURSOR.click.duration * 2}`);
+      // ---- Fase 6: a câmera entra na tela, e o card vira página --------------------------
+      tl.addLabel('dive', `press+=${CURSOR.click.duration * 2}`);
 
-      tl.call(
-        () => {
-          // Estado ANTES: o card onde está. Depois mudamos as classes e o Flip interpola.
-          const state = Flip.getState(card, { props: 'borderRadius,backgroundColor' });
+      // A tampa volta a ficar de frente e a base sai: no fim a tela é um retângulo plano.
+      if (!isMobile) {
+        tl.to(lid, {
+          rotateX: 0,
+          duration: EXPAND.dive.duration * 0.6,
+          ease: EXPAND.dive.ease,
+        }, 'dive')
+          .to(base, {
+            autoAlpha: 0,
+            duration: EXPAND.dive.duration * 0.45,
+            ease: 'power2.in',
+          }, 'dive');
+      }
 
-          // Estado DEPOIS: o card ocupa a viewport inteira, já com o fundo do hero.
-          card.setAttribute('data-expanding', 'true');
-          gsap.set(card, {
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100svh',
-            y: 0,
-            padding: 0,
-            borderRadius: 0,
-            zIndex: 8,
-          });
-          // O fundo do card vira o branco do hero durante a expansão.
-          const bg = card.querySelector<HTMLElement>(`.${styles.result__bg}`);
-          if (bg) {
-            gsap.to(bg, {
-              backgroundColor: 'var(--white)',
-              borderColor: 'transparent',
-              backdropFilter: 'blur(0px)',
-              duration: EXPAND.duration * 0.7,
-              ease: EXPAND.ease,
-            });
-          }
-
-          Flip.from(state, {
-            duration: EXPAND.duration,
-            ease: EXPAND.ease,
-            absolute: true,
-            // O portão abre quando a expansão passa de ~60%: o hero já pinta por baixo.
-            onUpdate(this: gsap.core.Tween) {
-              if (this.progress() >= EXPAND.gateAt) openIntroGate();
-            },
-          });
+      // O mergulho: o conjunto cresce até a TELA cobrir a viewport.
+      tl.to(rig, {
+        scale: () => {
+          const sr = screen.getBoundingClientRect();
+          if (!sr.width || !sr.height) return 6;
+          const current = (gsap.getProperty(rig, 'scale') as number) || 1;
+          const cover = Math.max(window.innerWidth / sr.width, window.innerHeight / sr.height);
+          return current * cover * 1.06;
         },
-        undefined,
-        'expand',
-      )
-        // O conteúdo do card some em fade durante a expansão.
-        .to(content, {
+        duration: EXPAND.dive.duration,
+        ease: EXPAND.dive.ease,
+      }, 'dive')
+        // O cenário e o reflexo saem: no fim só resta a tela.
+        .to([sceneRefs.props.current, glare], {
           autoAlpha: 0,
-          duration: EXPAND.contentOut.duration,
-          ease: EXPAND.contentOut.ease,
-        }, 'expand')
-        // Barra e demais resultados saem com blur + fade.
+          duration: EXPAND.restOut.duration,
+          ease: EXPAND.restOut.ease,
+        }, 'dive')
+        .to(`.${styles.scene__surface}`, {
+          autoAlpha: 0,
+          duration: EXPAND.restOut.duration,
+          ease: EXPAND.restOut.ease,
+        }, 'dive');
+
+      // --- Flip: o card cresce até cobrir tudo, já com o branco do hero ---
+      tl.addLabel('expand', `dive+=${EXPAND.dive.duration * 0.55}`);
+
+      // O card cresce DENTRO da tela ate cobri-la por inteiro, ja com o branco do hero.
+      //
+      // Por que nao Flip aqui: `.screen` tem `overflow: hidden` e `container-type: size`, e os
+      // dois recortam/contem um filho `position: fixed` — o card ficaria preso dentro da tela.
+      // Quem leva a tela ate a viewport e o mergulho (fase anterior); este tween so precisa
+      // fazer o card encher a tela, e o resultado visual e o mesmo.
+      const bg = card.querySelector<HTMLElement>(`.${styles.result__bg}`);
+
+      tl.to(card, {
+        // Em unidades do container: cobre a tela inteira a partir de onde o card esta.
+        top: 0,
+        left: 0,
+        x: () => {
+          const sr = screen.getBoundingClientRect();
+          const cr = card.getBoundingClientRect();
+          return sr.left - cr.left;
+        },
+        y: () => {
+          const sr = screen.getBoundingClientRect();
+          const cr = card.getBoundingClientRect();
+          return sr.top - cr.top;
+        },
+        width: () => screen.getBoundingClientRect().width,
+        height: () => screen.getBoundingClientRect().height,
+        padding: 0,
+        borderRadius: 0,
+        duration: EXPAND.duration,
+        ease: EXPAND.ease,
+        // O portao abre quando a expansao passa de ~60%: o hero ja pinta por baixo.
+        onUpdate(this: gsap.core.Tween) {
+          if (this.progress() >= EXPAND.gateAt) openIntroGate();
+        },
+      }, 'expand');
+
+      // O fundo do card vira o branco do hero durante a expansao.
+      if (bg) {
+        tl.to(bg, {
+          backgroundColor: 'var(--white)',
+          borderColor: 'transparent',
+          backdropFilter: 'blur(0px)',
+          borderRadius: 0,
+          duration: EXPAND.duration * 0.7,
+          ease: EXPAND.ease,
+        }, 'expand');
+      }
+
+      tl.to(content, {
+        autoAlpha: 0,
+        duration: EXPAND.contentOut.duration,
+        ease: EXPAND.contentOut.ease,
+      }, 'expand')
         .to([shell, others], {
           autoAlpha: 0,
           filter: `blur(${EXPAND.restOut.blur}px)`,
           duration: EXPAND.restOut.duration,
           ease: EXPAND.restOut.ease,
         }, 'expand')
-        // O glow escuro sai junto: no fim só resta o branco do card.
         .to(`.${styles.intro__glow}`, {
           autoAlpha: 0,
           duration: EXPAND.restOut.duration,
           ease: EXPAND.restOut.ease,
         }, 'expand')
-        // Garante o portão aberto mesmo se o onUpdate não tiver rodado (timeScale alto).
+        // Garante o portao aberto mesmo se o onUpdate nao rodar (timeScale alto).
         .call(openIntroGate, undefined, `expand+=${EXPAND.duration * EXPAND.gateAt}`)
-        // Cross-fade: dissolve o overlay por cima do hero já pintado.
+        // Cross-fade: dissolve o overlay por cima do hero ja pintado.
         .to(root, {
           autoAlpha: 0,
           duration: EXPAND.crossfade.duration,
           ease: EXPAND.crossfade.ease,
         }, `expand+=${EXPAND.duration - EXPAND.crossfade.duration * 0.35}`);
+
+      // `scene` só existe para o revert do context alcançar a cena inteira.
+      void scene;
     }, rootRef);
 
     return () => {
-      // Se desmontar no meio (StrictMode/HMR), não deixa o hero preso nem o scroll travado.
       ctx.revert();
       tlRef.current = null;
       openIntroGate();
@@ -454,14 +575,13 @@ export default function IntroOverlay({
       <span className={styles.intro__glow} aria-hidden="true" />
 
       <div ref={stageRef} className={styles.intro__stage}>
-        <ResultCard refs={resultRefs} title={title} url={url} description={description} />
-        <SearchBar
-          refs={searchRefs}
-          suggestions={SUGGESTION_LIST}
-          placeholder="pesquisar"
-        />
-        {/* Mobile e reduced motion não têm cursor: o clique é só ripple + Flip. */}
-        {mode === 'full' && !isMobile ? <FakeCursor refs={cursorRefs} /> : null}
+        {/* A busca inteira acontece DENTRO da tela do notebook. */}
+        <LaptopScene refs={sceneRefs}>
+          <ResultCard refs={resultRefs} title={title} url={url} description={description} />
+          <SearchBar refs={searchRefs} suggestions={SUGGESTION_LIST} placeholder="pesquisar" />
+          {/* Mobile e reduced motion não têm cursor: o clique é só ripple + Flip. */}
+          {mode === 'full' && !isMobile ? <FakeCursor refs={cursorRefs} /> : null}
+        </LaptopScene>
       </div>
 
       <button type="button" className={styles.intro__skip} onClick={onSkip}>
