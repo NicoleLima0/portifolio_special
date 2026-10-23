@@ -69,6 +69,26 @@ export default function Contact() {
           Sites em {site.city}
         </Link>
         <span>{site.role}</span>
+        {/* Atribuições das licenças dos assets de terceiros usados no intro. */}
+        <span className={styles.contact__credit}>
+          Fluent Emoji © Microsoft{' '}
+          <a
+            href="https://github.com/microsoft/fluentui-emoji"
+            target="_blank"
+            rel="noopener noreferrer license"
+          >
+            [MIT]
+          </a>
+          {' · '}
+          Laptop by J-Toastie{' '}
+          <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer license">
+            [CC-BY]
+          </a>{' '}
+          via{' '}
+          <a href="https://poly.pizza/m/dYz5pDFrRE" target="_blank" rel="noopener noreferrer">
+            Poly Pizza
+          </a>
+        </span>
       </footer>
     </section>
   );

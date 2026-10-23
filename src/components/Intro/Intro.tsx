@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { closeIntroGate } from './introGate';
 import IntroOverlay, { type IntroMode } from './IntroOverlay';
-import { site } from '@/lib/site';
 
 const SESSION_KEY = 'nicole:intro-played';
 
@@ -32,8 +31,11 @@ export default function Intro() {
     // ?intro=0 pula, ?intro=1 força (dev). Fora isso: só na primeira visita da sessão.
     const show = forced === '1' || (forced !== '0' && !played);
 
-    // reduced motion vence tudo; 2ª visita (quando forçada) roda a versão curta.
-    const mode: IntroMode = reduced ? 'reduced' : played ? 'short' : 'full';
+    // reduced motion vence tudo. `?intro=1` é o atalho de dev para ver a encenação INTEIRA,
+    // então ele também vence o 'short' da 2ª visita — senão, depois de ver o intro uma vez,
+    // forçar passava a mostrar só a versão acelerada.
+    const forcedFull = forced === '1';
+    const mode: IntroMode = reduced ? 'reduced' : played && !forcedFull ? 'short' : 'full';
 
     if (show) closeIntroGate(); // fecha ANTES do hero começar a desenhar
     setState({ active: show, mode });
@@ -50,15 +52,5 @@ export default function Intro() {
 
   if (!state?.active) return null;
 
-  return (
-    <IntroOverlay
-      mode={state.mode}
-      // O card mostra o resultado de busca REAL do site: mesmo texto do <title> e da meta
-      // description (src/lib/site.ts), então o que aparece aqui nunca diverge do SEO.
-      title={site.title}
-      url={site.url.replace(/^https?:\/\//, '')}
-      description={site.description}
-      onDone={onDone}
-    />
-  );
+  return <IntroOverlay mode={state.mode} onDone={onDone} />;
 }

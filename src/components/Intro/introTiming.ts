@@ -1,149 +1,104 @@
 /**
- * Ritmo do intro "busca dentro do notebook → clique → abre o portfólio".
- * Este é o ÚNICO lugar para mexer em duração e easing: a timeline em IntroOverlay.tsx lê tudo
- * daqui, então ajustar um número muda a animação inteira sem caçar valores pelos componentes.
+ * Ritmo do intro — o ÚNICO lugar para mexer em TEMPO e EASING.
+ * (CÂMERA, LUZES, MATERIAIS e GEOMETRIA ficam em ./three/sceneConfig.ts.)
  *
- * Orçamento (~8,6 s) — ritmo calmo, dá tempo de ler cada etapa:
- *   Fase 0  0,0 → 1,1 s   a cena entra: cenário + notebook se acomodam
- *   Fase 1  1,1 → 2,1 s   a barra de busca surge dentro da tela
- *   Fase 2  2,1 → 4,5 s   digitação letra a letra + sugestões
- *   Fase 3  4,5 → 5,2 s   "Enter": pulso, sugestões saem, barra sobe
- *   Fase 4  5,2 → 6,4 s   resultados entram com stagger
- *   Fase 5  6,4 → 7,6 s   cursor percorre a curva, hover e clique
- *   Fase 6  7,6 → 8,6 s   a câmera entra na tela + Flip até a viewport + cross-fade
+ * Orçamento (~6,5 s), tudo relativo ao início da timeline da cena:
+ *   0,0 → 0,8 s   a cena aparece; câmera 3/4 afastada, empurrando devagar; tela já acesa
+ *   0,8 → 2,4 s   digitação na tela do notebook
+ *   2,4 → 3,0 s   resultados com stagger
+ *   3,0 → 3,8 s   o cursor vai até o resultado e clica
+ *   3,8 → 4,6 s   carregamento + o hero-shot aparece na tela; câmera chega frontal
+ *   4,6 → 6,2 s   mergulho até a tela cobrir a viewport
+ *   6,2 → 6,5 s   cross-fade para o hero real
  */
 
-// ---------------------------------------------------------------------------
-// Fase 0 — a cena entra
-// ---------------------------------------------------------------------------
-
-export const SCENE_IN = {
-  /** O conjunto do notebook chega: leve escala + subida. */
-  rig: { duration: 1.1, ease: 'power3.out', scaleFrom: 0.9, yFrom: 40 },
-  /** Inclinação de repouso da tampa (negativo = topo recuando). */
-  tiltDeg: -9,
-  /** Blobs e partículas do cenário entram com stagger. */
-  props: { duration: 1.2, stagger: 0.12, ease: 'power2.out' },
-  /** Respiração contínua do conjunto (loop suave durante todo o intro). */
-  float: { duration: 4.5, ease: 'sine.inOut', amount: 10 },
+/** Coordenadas do canvas da tela (1600x1000) — ver three/screenTexture.ts. */
+export const SEARCH = {
+  query: 'desenvolvedora de sites teresópolis',
+  typing: { start: 0.8, duration: 1.6 },
+  results: { start: 2.4, duration: 0.6, ease: 'power2.out' },
+  /** O cursor entra pela direita e curva até o título do resultado. */
+  cursor: {
+    start: 3.0,
+    duration: 0.7,
+    ease: 'power3.inOut',
+    from: [1480, 880] as const,
+    via: [1100, 640] as const,
+    to: [430, 404] as const,
+  },
+  ripple: { start: 3.68, duration: 0.5 },
+  loading: { start: 3.8, duration: 0.55 },
+  hero: { start: 4.0, duration: 0.6, ease: 'power2.out' },
 } as const;
 
-// ---------------------------------------------------------------------------
-// Fase 1 — a barra de busca aparece (dentro da tela)
-// ---------------------------------------------------------------------------
-
-export const BAR_IN = {
-  start: 1.1, // s absolutos
-  duration: 0.9,
-  ease: 'power2.out',
-  scaleFrom: 0.96,
-  blurFrom: 10, // px — sai para 0
+/** Tempos da cena 3D. */
+export const SCENE = {
+  /** Câmera: 3/4 → frontal. */
+  toFront: { start: 0.2, duration: 4.2, ease: 'power2.inOut' },
+  /** Câmera: mergulho dentro da tela. */
+  dive: { start: 4.6, duration: 1.6, ease: 'power3.inOut' },
 } as const;
 
-// ---------------------------------------------------------------------------
-// Fase 2 — digitação + sugestões
-// ---------------------------------------------------------------------------
-
-export const TYPING = {
-  /** O que é digitado na barra. */
-  query: 'nicole lima desenvolvedora de sites',
-  /** Janela total da digitação. O ritmo por letra é derivado disto. */
-  duration: 2.1,
-  /** Variação humana: cada letra varia em torno do intervalo médio. */
-  jitter: 0.45,
-  /** Pausa curta no meio da frase (depois do nome), como quem pensa. */
-  pause: { afterChars: 11, duration: 0.35 },
-  /** Piscar do cursor de texto. */
-  caret: { duration: 0.5 },
+/** Contador de loading (progresso real dos assets da cena). */
+export const LOADING = {
+  /**
+   * Piso do contador. Baixo de propósito: a cena deve aparecer junto com o fundo, não depois
+   * de segundos de tela vazia. Se o glb ainda não chegou, o contador segura no máximo isto.
+   */
+  min: 0.4,
+  /** Teto: passou disto sem carregar, pula a intro direto para o hero. */
+  timeout: 6,
+  /** Subida suave até 100 quando o load fecha antes. */
+  catchUp: 0.4,
+  /** Saída do contador quando chega a 100. */
+  out: { duration: 0.4, ease: 'power2.in' },
 } as const;
 
-export const SUGGESTIONS = {
-  start: 2.9, // s absolutos: entram enquanto ainda digita
-  duration: 0.5,
-  stagger: 0.1,
-  ease: 'power2.out',
-  yFrom: 8,
+/** Emenda final com o hero. */
+export const HANDOFF = {
+  /** Fração do mergulho em que o portão do hero abre (a tela já é quase a viewport). */
+  gateAt: 0.88,
+  /**
+   * Duração do whiteout: a tela dissolve para branco no FIM do mergulho. Não há cross-fade
+   * entre a tela e o hero real — ele deixava os dois NICOLE sobrepostos, porque o print é
+   * fixo e o hero é responsivo. Quando o quadro está branco, o overlay sai e o hero entra
+   * com a própria animação.
+   */
+  whiteout: 0.35,
 } as const;
 
-// ---------------------------------------------------------------------------
-// Fase 3 — "Enter"
-// ---------------------------------------------------------------------------
-
-export const SUBMIT = {
-  /** Espera depois da última letra, antes de "apertar Enter". */
-  hold: 0.35,
-  /** Pulso da barra: 1 → 1,02 → 1. */
-  pulse: { scale: 1.02, duration: 0.2, ease: 'power2.inOut' },
-  /** Sugestões saem. */
-  suggestionsOut: { duration: 0.28, ease: 'power2.in', stagger: 0.04 },
-  /** A barra sobe para o topo da tela. */
-  rise: { duration: 0.75, ease: 'power3.inOut' },
+/** Camadas do fundo (tudo dirigido pelo master; ver screenState.ts para a regra). */
+export const LAYERS = {
+  /** Objetos 3D: pop-in elástico em stagger, enquanto a câmera vira. */
+  emojis: { start: 0.5, duration: 1.4 },
+  /** Pulinho de todos no "Enter" da busca. */
+  jump: { start: 2.42, duration: 0.45 },
+  /** Quique no clique do resultado. */
+  bounce: { start: 3.66, duration: 0.6 },
+  /** Fly-through: passam voando pela câmera no mergulho. */
+  fly: { start: 4.6, duration: 1.1 },
+  /** Varredura de luz na tela, quando o hero-shot aparece. */
+  sweep: { start: 4.0, duration: 0.8 },
+  /** Partículas sugadas para dentro da tela no clique. */
+  suck: { start: 3.68, duration: 0.6 },
+  /** Fundo lavanda → branco, e saída dos cards/tipografia. */
+  dissolve: { start: 4.6, duration: 1.4 },
 } as const;
 
-// ---------------------------------------------------------------------------
-// Fase 4 — resultados
-// ---------------------------------------------------------------------------
-
-export const RESULTS = {
-  duration: 0.8,
-  stagger: 0.14,
-  ease: 'power2.out',
-  yFrom: 24,
-  blurFrom: 8, // px
-  /** Respiro depois que todos entraram, antes do cursor aparecer. */
-  hold: 0.3,
-} as const;
-
-// ---------------------------------------------------------------------------
-// Fase 5 — cursor, hover e clique
-// ---------------------------------------------------------------------------
-
-export const CURSOR = {
-  /** Percurso até o card (curva montada em IntroOverlay.tsx). */
-  travel: { duration: 1.1, ease: 'power3.inOut' },
-  /** Hover do card: leve elevação. */
-  hover: { duration: 0.35, ease: 'power2.out', lift: -6 },
-  /** Espera no hover antes do clique: deixa ler o resultado. */
-  dwell: 0.45,
-  /** Clique: 1 → 0,85 → 1. */
-  click: { scale: 0.85, duration: 0.14, ease: 'power2.inOut' },
-  /** Onda circular saindo do ponto do clique. */
-  ripple: { duration: 0.75, ease: 'power2.out', scale: 14 },
-  /** Saída do cursor depois do clique. */
-  out: { duration: 0.3, ease: 'power2.in' },
-} as const;
-
-// ---------------------------------------------------------------------------
-// Fase 6 — a câmera entra na tela e o card vira página
-// ---------------------------------------------------------------------------
-
-export const EXPAND = {
-  /** A câmera mergulha: o notebook cresce até a tela encher a viewport. */
-  dive: { duration: 1.0, ease: 'expo.inOut' },
-  /** Flip do card até cobrir a tela, já com o branco do hero. */
-  duration: 0.9,
-  ease: 'expo.inOut',
-  /** O conteúdo do card some antes de ele terminar de crescer. */
-  contentOut: { duration: 0.35, ease: 'power2.in' },
-  /** O resto (barra, outros resultados, cenário) sai com blur + fade. */
-  restOut: { duration: 0.5, ease: 'power2.in', blur: 12 },
-  /** Fração da expansão em que o portão do hero abre (o hero pinta por baixo). */
-  gateAt: 0.6,
-  /** Cross-fade final: dissolve o overlay por cima do hero já pintado. */
-  crossfade: { duration: 0.3, ease: 'power2.out' },
-} as const;
+/** Entrada do overlay (só o conteúdo; o fundo já nasce opaco pelo CSS). */
+export const BACKDROP = { duration: 0.4, ease: 'power2.out' } as const;
 
 // ---------------------------------------------------------------------------
 // Variações de contexto
 // ---------------------------------------------------------------------------
 
-/** Mobile: notebook sem rotação 3D pesada, sem cursor (só ripple + Flip). */
+/** Mobile: sem bokeh, DPR ≤ 1,5, câmera mais afastada (ver sceneConfig). */
 export const MOBILE_BP = 768;
 
-/** 2ª visita na sessão: a mesma encenação acelerada para caber em ~1 s. */
-export const SHORT_TIMESCALE = 8;
+/** 2ª visita na sessão: a mesma encenação, acelerada para caber em ~1 s. */
+export const SHORT_TIMESCALE = 6.5;
 
-/** `prefers-reduced-motion`: sem digitação nem cursor, só um fade curto. */
+/** `prefers-reduced-motion`: sem cena 3D, só um fade curto. */
 export const REDUCED_FADE = 0.35;
 
 /** "Pular": fade rápido do overlay. */
