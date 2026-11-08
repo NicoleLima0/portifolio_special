@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { gsap, MOTION_OK, MOTION_REDUCED, useGSAP } from '@/lib/gsap';
 import { usePointer } from '@/hooks/usePointer';
 import { useInView } from '@/hooks/useInView';
@@ -8,7 +8,6 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import FluidCanvas from './FluidCanvas';
 import InkCanvas, { HERO_WORD, type IntroLetter } from './InkCanvas';
 import { createCoverage, useHeroLoop, type Coverage } from './heroFrame';
-import { useIntroGate } from '@/components/Intro/introGate';
 import { whatsappUrl } from '@/lib/site';
 import styles from './Hero.module.scss';
 
@@ -17,8 +16,7 @@ export default function Hero() {
   const pointer = usePointer(rootRef);
   const inView = useInView(rootRef);
   const reducedMotion = useReducedMotion();
-  const introDone = useIntroGate(); // intro ainda cobrindo a tela: não desenhar por baixo
-  const running = inView && !reducedMotion && introDone;
+  const running = inView && !reducedMotion;
 
   // Um só loop para as duas camadas; parado fora da viewport e com reduced motion.
   const loop = useHeroLoop(running);
@@ -60,7 +58,7 @@ export default function Hero() {
         // O fromTo já aplicou o estado inicial inline: o CSS de "pendente" pode sair.
         root.removeAttribute('data-intro');
         introRef.current = intro;
-        if (nameReadyRef.current && introDoneRef.current) intro.play();
+        if (nameReadyRef.current) intro.play();
 
         return () => {
           introRef.current = null;
@@ -70,22 +68,11 @@ export default function Hero() {
     { scope: rootRef },
   );
 
-  // A entrada do nome só toca com a fonte carregada E o intro fora do caminho (em qualquer ordem).
-  // Sem intro na página o portão já nasce aberto, então isto é o comportamento de sempre.
-  const introDoneRef = useRef(introDone);
-  introDoneRef.current = introDone;
-
-  const playName = useCallback(() => {
-    if (nameReadyRef.current && introDoneRef.current) introRef.current?.play();
-  }, []);
-
+  // A entrada do nome só toca quando a fonte carregou (o timeline já pode existir antes disso).
   const onNameReady = useCallback(() => {
     nameReadyRef.current = true;
-    playName();
-  }, [playName]);
-
-  // Reavalia quando o portão abre (a fonte normalmente já carregou atrás do overlay).
-  useEffect(playName, [introDone, playName]);
+    introRef.current?.play();
+  }, []);
 
   return (
     <section

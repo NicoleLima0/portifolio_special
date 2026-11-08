@@ -9,7 +9,7 @@ $azure: #4c8dff;
 $rust: #b24510;
 $peach: #ffb08f;
 
-// Mesmo nível do BackToTop: acima do FxCanvas (40), abaixo do overlay do intro (100).
+// Mesmo nível do BackToTop: acima do FxCanvas (40).
 .root {
   position: fixed;
   right: clamp(1rem, 3vw, 2.25rem);

@@ -2,7 +2,7 @@
 @use '../../styles/tokens' as *;
 @use '../../styles/mixins' as *;
 
-// Acima do FxCanvas (40), abaixo do overlay do intro (100).
+// Acima do FxCanvas (40).
 .top {
   position: fixed;
   right: clamp(1rem, 3vw, 2.25rem);
