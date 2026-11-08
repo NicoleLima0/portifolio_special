@@ -65,6 +65,25 @@
   color: var(--muted);
 }
 
+// Crédito da licença do modelo 3D: discreto, mas legível (a CC BY exige a atribuição visível).
+.contact__credit {
+  flex-basis: 100%;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  opacity: 0.55;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+
+    @include hover {
+      color: var(--ink);
+    }
+  }
+}
+
 .contact__local {
   color: var(--muted);
   text-decoration: none;

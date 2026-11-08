@@ -5,3 +5,6 @@ out/
 next-env.d.ts
 .env*.local
 .DS_Store
+
+# Screenshots da intro (scripts/intro-frames.mjs)
+tmp/
