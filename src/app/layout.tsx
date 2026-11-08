@@ -6,6 +6,7 @@ import SmoothScroll from '@/components/providers/SmoothScroll';
 import FxCanvas from '@/components/fx/FxCanvas';
 import Intro from '@/components/Intro/Intro';
 import BackToTop from '@/components/ui/BackToTop';
+import WhatsAppButton from '@/components/ui/WhatsAppButton';
 import './globals.scss';
 
 export const metadata: Metadata = {
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <SmoothScroll />
         {children}
         <BackToTop />
+        <WhatsAppButton />
         <FxCanvas />
         {/* Camada por cima de tudo (z-index 100 > FxCanvas 40); depois de {children} para o hero
             já estar montado e pronto por baixo. Autodestrói ao terminar. */}

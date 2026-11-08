@@ -37,13 +37,13 @@ export async function generateMetadata({ params }: PageProps<'/trabalhos/[slug]'
       title,
       description: work.summary,
       // A capa do case é o card de compartilhamento (metadataBase resolve o caminho absoluto).
-      images: [{ url: work.cover, width: 1600, height: 1000, alt: work.alt }],
+      images: [{ url: work.cover.src, width: work.cover.width, height: work.cover.height, alt: work.alt }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description: work.summary,
-      images: [work.cover],
+      images: [work.cover.src],
     },
   };
 }

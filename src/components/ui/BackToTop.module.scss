@@ -6,7 +6,8 @@
 .top {
   position: fixed;
   right: clamp(1rem, 3vw, 2.25rem);
-  bottom: clamp(1rem, 3vw, 2.25rem);
+  // Fica acima do botão do WhatsApp (3.75rem + respiro), que ocupa o canto.
+  bottom: calc(clamp(1rem, 3vw, 2.25rem) + 3.75rem + 0.85rem);
   z-index: 50;
 
   display: grid;

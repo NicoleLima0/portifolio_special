@@ -1,6 +1,24 @@
+import type { StaticImageData } from 'next/image';
+
+import artDecor01 from '@/assets/works/art-decor/art-decor-01.webp';
+import artDecor02 from '@/assets/works/art-decor/art-decor-02.webp';
+import artDecor03 from '@/assets/works/art-decor/art-decor-03.webp';
+import artDecor04 from '@/assets/works/art-decor/art-decor-04.webp';
+import bldg4u01 from '@/assets/works/bldg4u/bldg4u-01.png';
+import bldg4u02 from '@/assets/works/bldg4u/bldg4u-02.png';
+import bldg4u03 from '@/assets/works/bldg4u/bldg4u-03.png';
+import bldg4u04 from '@/assets/works/bldg4u/bldg4u-04.png';
+import bldg4u06 from '@/assets/works/bldg4u/bldg4u-06.png';
+import bldg4u08 from '@/assets/works/bldg4u/bldg4u-08.png';
+import bldg4u10 from '@/assets/works/bldg4u/bldg4u-10.png';
+import wodcheck01 from '@/assets/works/wodcheck/wodcheck-01.png';
+import wodcheck02 from '@/assets/works/wodcheck/wodcheck-02.png';
+import wodcheck03 from '@/assets/works/wodcheck/wodcheck-03.png';
+import wodcheck04 from '@/assets/works/wodcheck/wodcheck-04.png';
+
 export type GalleryShot = {
-  /** imagem em /public */
-  src: string;
+  /** imagem importada de src/assets (traz largura e altura) */
+  src: StaticImageData;
   alt: string;
   /** 'full' ocupa a largura toda; 'half' entra em par lado a lado no desktop */
   span: 'full' | 'half';
@@ -24,8 +42,8 @@ export type Work = {
   tag: string;
   year: string;
   summary: string;
-  /** imagem em /public (usada no next/image) */
-  cover: string;
+  /** imagem importada de src/assets (usada no next/image) */
+  cover: StaticImageData;
   /** alt descritivo da capa */
   alt: string;
 
@@ -58,7 +76,7 @@ export const WORKS: Work[] = [
     year: '2026',
     summary:
       'Clientes, obras e financeiro num só lugar, com portal próprio para quem contratou.',
-    cover: '/works/bldg4u/bldg4u-01.png',
+    cover: bldg4u01,
     alt: 'Portal de acesso do BLDG4U, com entrada separada para administrador e cliente.',
     client: 'BLDG4U Construtora',
     disciplines: ['Produto', 'Front-end', 'Design de interface'],
@@ -68,37 +86,37 @@ export const WORKS: Work[] = [
     ],
     gallery: [
       {
-        src: '/works/bldg4u/bldg4u-02.png',
+        src: bldg4u02,
         alt: 'Dashboard com saldo do mês, recebido contra pago, obras por situação e notificações de atraso.',
         span: 'full',
         ratio: '16 / 8',
       },
       {
-        src: '/works/bldg4u/bldg4u-04.png',
+        src: bldg4u04,
         alt: 'Lista de obras com status, progresso, prazo e valor de cada contrato.',
         span: 'half',
         ratio: '16 / 9',
       },
       {
-        src: '/works/bldg4u/bldg4u-03.png',
+        src: bldg4u03,
         alt: 'Lista de clientes com obra atual, situação de pagamento e origem do contato.',
         span: 'half',
         ratio: '16 / 9',
       },
       {
-        src: '/works/bldg4u/bldg4u-08.png',
+        src: bldg4u08,
         alt: 'Portal do cliente mostrando o progresso da obra e as etapas do termo de aceite.',
         span: 'full',
         ratio: '16 / 8',
       },
       {
-        src: '/works/bldg4u/bldg4u-10.png',
+        src: bldg4u10,
         alt: 'Tela de pagamentos do portal, com as parcelas do contrato e os comprovantes.',
         span: 'half',
         ratio: '16 / 9',
       },
       {
-        src: '/works/bldg4u/bldg4u-06.png',
+        src: bldg4u06,
         alt: 'Configurações do sistema, com perfil, dados da empresa, marca e notificações.',
         span: 'half',
         ratio: '16 / 9',
@@ -120,43 +138,43 @@ export const WORKS: Work[] = [
     tag: 'Landing page',
     year: '2026',
     summary:
-      'Loja de cortinas sob medida com 40 anos de casa e nenhuma presença digital.',
-    cover: '/works/art-decor/art-decor-01.png',
+      'Loja de cortinas sob medida com 45 anos de casa e nenhuma presença digital.',
+    cover: artDecor01,
     alt: 'Topo da landing page da Art Decor, com uma sala ampla e cortinas sob medida ao fundo.',
     client: 'Art Decor, Teresópolis, RJ',
     disciplines: ['Landing page', 'SEO', 'Front-end'],
     concept: [
-      'A Art Decor atende Teresópolis desde 1984 no boca a boca. Quem procurava o nome na internet não achava nada.',
-      'A página foi montada em torno de um pedido só: o orçamento. Os 40 anos abrem a conversa, os produtos vêm com o nome que o cliente já usa na loja, e o WhatsApp fica ao alcance em qualquer ponto da rolagem.',
+      'A Art Decor atende Teresópolis desde 1981 no boca a boca. Quem procurava o nome na internet não achava nada.',
+      'A página foi montada em torno de um pedido só: o orçamento. Os 45 anos abrem a conversa, os produtos vêm com o nome que o cliente já usa na loja, e o WhatsApp fica ao alcance em qualquer ponto da rolagem.',
     ],
     gallery: [
       {
-        src: '/works/art-decor/art-decor-01.png',
+        src: artDecor01,
         alt: 'Topo da página com a chamada principal e os botões de orçamento.',
         span: 'full',
         ratio: '16 / 8',
       },
       {
-        src: '/works/art-decor/art-decor-02.png',
+        src: artDecor02,
         alt: 'Seção de produtos com cortinas, persianas e modelos motorizados.',
         span: 'half',
         ratio: '16 / 9',
       },
       {
-        src: '/works/art-decor/art-decor-03.png',
+        src: artDecor03,
         alt: 'Bloco de história da loja, com os anos de experiência e os diferenciais do atendimento.',
         span: 'half',
         ratio: '16 / 9',
       },
       {
-        src: '/works/art-decor/art-decor-04.png',
+        src: artDecor04,
         alt: 'Chamada final de orçamento pelo WhatsApp e rodapé com contato e endereço.',
         span: 'full',
         ratio: '16 / 8',
       },
     ],
     metrics: [
-      { value: '40 anos', label: 'de loja, pela primeira vez online' },
+      { value: '45 anos', label: 'de loja, pela primeira vez online' },
       { value: '1 página', label: 'do primeiro contato ao orçamento' },
     ],
     role: 'Design e desenvolvimento',
@@ -171,7 +189,7 @@ export const WORKS: Work[] = [
     year: '2026',
     summary:
       'Check-in por GPS: o aluno marca presença pelo celular e o sistema confere se ele está lá.',
-    cover: '/works/wodcheck/wodcheck-01.png',
+    cover: wodcheck01,
     alt: 'Topo do WodCheck, com a lista de presença da aula e a confirmação no celular.',
     client: 'WodCheck',
     disciplines: ['Produto digital', 'Mobile', 'Front-end'],
@@ -181,25 +199,25 @@ export const WORKS: Work[] = [
     ],
     gallery: [
       {
-        src: '/works/wodcheck/wodcheck-01.png',
+        src: wodcheck01,
         alt: 'Topo da página com a lista de presença ao vivo e o card de confirmação do aluno.',
         span: 'full',
         ratio: '16 / 8',
       },
       {
-        src: '/works/wodcheck/wodcheck-04.png',
+        src: wodcheck04,
         alt: 'As sete conferências feitas a cada check-in, ao lado do mapa com o raio da academia.',
         span: 'half',
         ratio: '16 / 9',
       },
       {
-        src: '/works/wodcheck/wodcheck-02.png',
+        src: wodcheck02,
         alt: 'Recursos do sistema: fila de espera, agenda de aulas, presença ao vivo e relatórios.',
         span: 'half',
         ratio: '16 / 9',
       },
       {
-        src: '/works/wodcheck/wodcheck-03.png',
+        src: wodcheck03,
         alt: 'As duas pontas do produto: painel no navegador para a academia e app para o aluno.',
         span: 'full',
         ratio: '16 / 8',

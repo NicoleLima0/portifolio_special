@@ -142,7 +142,7 @@ export function caseGraph(work: Work) {
         headline: work.headline,
         description: work.summary,
         url,
-        image: `${site.url}${work.cover}`,
+        image: `${site.url}${work.cover.src}`,
         dateCreated: work.year,
         inLanguage: 'pt-BR',
         creator: { '@id': id.person },

@@ -74,7 +74,7 @@ export default function CaseGallery({ shots, title }: Props) {
     <div ref={rootRef} className={styles.gallery}>
       {shots.map((shot, i) => (
         <div
-          key={`${shot.src}-${i}`}
+          key={`${shot.src.src}-${i}`}
           className={`${styles.gallery__item} ${shot.span === 'half' ? styles['gallery__item--half'] : ''}`}
         >
           <figure className={styles.gallery__figure} data-shot-figure>
