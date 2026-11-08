@@ -24,10 +24,29 @@ $peach: #ffb08f;
   color: #fff;
   text-decoration: none;
 
+  // Escondido até o hero sair da tela (ver WhatsAppButton.tsx).
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.75rem);
+  transition:
+    opacity 0.45s $ease-out,
+    transform 0.45s $ease-out,
+    visibility 0.45s;
+
+  @include reduced-motion {
+    transition: none;
+  }
+
   &:focus-visible {
     outline: 2px solid $azure;
     outline-offset: 4px;
   }
+}
+
+.root--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 // Raios: feixes finos ciano/magenta que giram devagar atrás do botão.

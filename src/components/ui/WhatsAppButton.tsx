@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { whatsappUrl } from '@/lib/site';
 import styles from './WhatsAppButton.module.scss';
 
@@ -5,11 +9,33 @@ type Props = {
   label?: string;
 };
 
-/** Atalho para o WhatsApp, fixo na tela. Usa o mesmo link (e a mesma mensagem) do resto do site. */
+/**
+ * Atalho para o WhatsApp, fixo na tela. Usa o mesmo link (e a mesma mensagem) do resto do site.
+ *
+ * Na home ele só aparece depois que o hero saiu da tela (a partir da segunda seção): lá ele
+ * tapava o "role para ver mais". Nas outras páginas, que não têm hero, aparece desde o início.
+ */
 export default function WhatsAppButton({ label = 'Fale comigo no WhatsApp' }: Props) {
+  const [visible, setVisible] = useState(false);
+  // O layout persiste entre páginas: reavalia a cada rota, porque só a home tem o hero.
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const hero = document.getElementById('inicio');
+    if (!hero) {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(([entry]) => setVisible(!entry.isIntersecting));
+    io.observe(hero);
+    return () => io.disconnect();
+  }, [pathname]);
+
   return (
     <a
-      className={styles.root}
+      className={`${styles.root} ${visible ? styles['root--visible'] : ''}`}
+      aria-hidden={!visible}
+      tabIndex={visible ? 0 : -1}
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"

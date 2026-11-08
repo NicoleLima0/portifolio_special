@@ -38,6 +38,9 @@ export default function BackToTop() {
         ↑
       </span>
       <span className="sr-only">Voltar ao topo</span>
+      <span className={styles.top__tip} aria-hidden="true">
+        Voltar ao topo
+      </span>
     </button>
   );
 }
