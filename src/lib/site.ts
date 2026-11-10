@@ -70,6 +70,9 @@ export const site = {
 
   /** Código do Search Console. Vazio não emite a meta tag. */
   googleSiteVerification: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION ?? '',
+
+  /** Contêiner do Google Tag Manager. Vazio não carrega a tag (útil em preview/local). */
+  gtmId: process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-PVL3QWNJ',
 } as const;
 
 /** Conversa no WhatsApp já com a primeira mensagem escrita: menos atrito do que um chat vazio. */
