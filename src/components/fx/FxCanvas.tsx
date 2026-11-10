@@ -5,6 +5,7 @@ import { gsap } from '@/lib/gsap';
 import { retainPointer, viewportPointer } from '@/lib/pointer';
 import { fx } from './fxStore';
 import { FX_VERTEX, IRIS_FRAGMENT, THUMB_FRAGMENT } from './fxShaders';
+import { linkPrograms } from '@/lib/webgl';
 import styles from './FxCanvas.module.scss';
 
 const FRAME_MS = 1000 / 60;
@@ -21,38 +22,6 @@ type Tex = { tex: WebGLTexture; w: number; h: number };
 type Uniforms = Record<string, WebGLUniformLocation | null>;
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-
-function compile(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error('[FxCanvas] shader:', gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
-function link(gl: WebGLRenderingContext, vertex: string, fragment: string): WebGLProgram | null {
-  const vs = compile(gl, gl.VERTEX_SHADER, vertex);
-  const fs = compile(gl, gl.FRAGMENT_SHADER, fragment);
-  const prog = gl.createProgram();
-  if (!vs || !fs || !prog) return null;
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.bindAttribLocation(prog, 0, 'aPos');
-  gl.linkProgram(prog);
-  gl.deleteShader(vs);
-  gl.deleteShader(fs);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.error('[FxCanvas] link:', gl.getProgramInfoLog(prog));
-    gl.deleteProgram(prog);
-    return null;
-  }
-  return prog;
-}
 
 function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -99,21 +68,22 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     }
   };
 
-  const setup = (): boolean => {
-    irisProg = link(gl, FX_VERTEX, IRIS_FRAGMENT);
-    thumbProg = link(gl, FX_VERTEX, THUMB_FRAGMENT);
-    if (!irisProg || !thumbProg) return false;
+  let cancelLink = () => {};
+
+  const configure = (iris: WebGLProgram, thumbnail: WebGLProgram) => {
+    irisProg = iris;
+    thumbProg = thumbnail;
     quad = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    iu = uniforms(irisProg, ['uRect', 'uView', 'uTime', 'uShift', 'uRadius', 'uAlpha']);
-    tu = uniforms(thumbProg, [
+    iu = uniforms(iris, ['uRect', 'uView', 'uTime', 'uShift', 'uRadius', 'uAlpha']);
+    tu = uniforms(thumbnail, [
       'uRect', 'uView', 'uTexA', 'uTexB', 'uScaleA', 'uScaleB', 'uMix', 'uVel', 'uParallax', 'uReveal', 'uAlpha', 'uRadius',
     ]);
     current = null;
-    use(thumbProg);
+    use(thumbnail);
     gl.uniform1i(tu.uTexA, 0);
     gl.uniform1i(tu.uTexB, 1);
     gl.enable(gl.BLEND);
@@ -121,13 +91,23 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     gl.clearColor(0, 0, 0, 0);
     textures.clear();
     loading.clear();
-    return true;
   };
 
-  if (!setup()) {
-    canvas.remove();
-    return null;
-  }
+  const setup = (done: (ok: boolean) => void) => {
+    const attribs = ['aPos'];
+    cancelLink = linkPrograms(
+      gl,
+      'FxCanvas',
+      [
+        { vertex: FX_VERTEX, fragment: IRIS_FRAGMENT, attribs },
+        { vertex: FX_VERTEX, fragment: THUMB_FRAGMENT, attribs },
+      ],
+      (programs) => {
+        if (programs) configure(programs[0], programs[1]);
+        done(!!programs);
+      },
+    );
+  };
 
   // --- Texturas: decodificadas fora da thread (createImageBitmap), no máximo 1 upload por frame ---
   const request = (src: string) => {
@@ -170,6 +150,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
     const ratio = Math.min(window.devicePixelRatio || 1, coarse ? 1.25 : 1.5) * FX_SCALE;
     canvas.width = Math.max(1, Math.round(vw * ratio));
     canvas.height = Math.max(1, Math.round(vh * ratio));
+    if (!irisProg || !thumbProg) return; // shaders ainda compilando: refeito quando ficarem prontos
     gl.viewport(0, 0, canvas.width, canvas.height);
     use(irisProg);
     gl.uniform2f(iu.uView, vw, vh);
@@ -183,14 +164,20 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
   resize();
   window.addEventListener('resize', onResize);
 
+  const onLinked = (ok: boolean) => {
+    lost = !ok;
+    if (ok) resize();
+  };
   const onLost = (e: Event) => {
     e.preventDefault();
+    cancelLink();
     lost = true;
   };
-  const onRestored = () => {
-    lost = !setup();
-    if (!lost) resize();
-  };
+  const onRestored = () => setup(onLinked);
+  setup((ok) => {
+    onLinked(ok);
+    if (!ok) canvas.remove();
+  });
   canvas.addEventListener('webglcontextlost', onLost);
   canvas.addEventListener('webglcontextrestored', onRestored);
 
@@ -220,7 +207,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
   };
 
   const tick = () => {
-    if (lost) return;
+    if (lost || !irisProg) return;
     const now = performance.now();
     const dt = last ? Math.min(now - last, 48) : FRAME_MS; // ~3 frames: engasgo não vira pico de velocidade
     last = now;
@@ -336,6 +323,7 @@ function createFxEngine(host: HTMLDivElement): { destroy(): void } | null {
   return {
     destroy() {
       disposed = true;
+      cancelLink();
       gsap.ticker.remove(tick);
       window.clearTimeout(resizeTimer);
       window.removeEventListener('resize', onResize);

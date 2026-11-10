@@ -1,7 +1,8 @@
 'use client';
 
 import { Fragment, useRef, type ElementType } from 'react';
-import { gsap, MOTION_OK, useGSAP } from '@/lib/gsap';
+import { gsap, MOTION_OK } from '@/lib/gsap';
+import { useDeferredGSAP } from '@/hooks/useDeferredGSAP';
 import styles from './SplitHeading.module.scss';
 
 type Props = {
@@ -16,7 +17,7 @@ export default function SplitHeading({ text, as: Tag = 'h2', className, id }: Pr
   const ref = useRef<HTMLElement>(null);
   const words = text.split(' ');
 
-  useGSAP(
+  useDeferredGSAP(
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {
@@ -31,7 +32,7 @@ export default function SplitHeading({ text, as: Tag = 'h2', className, id }: Pr
         });
       });
     },
-    { scope: ref },
+    ref,
   );
 
   return (

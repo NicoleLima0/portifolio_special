@@ -3,7 +3,8 @@
 import { useRef, ViewTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { gsap, MOTION_OK, ScrollTrigger, useGSAP } from '@/lib/gsap';
+import { gsap, MOTION_OK, ScrollTrigger } from '@/lib/gsap';
+import { useDeferredGSAP } from '@/hooks/useDeferredGSAP';
 import { scrollVelocity } from '@/lib/scroll';
 import { WORKS } from '@/lib/works';
 import styles from './Works.module.scss';
@@ -20,7 +21,7 @@ const DRIFT = [-28, 28];
 export default function Works() {
   const rootRef = useRef<HTMLElement>(null);
 
-  useGSAP(
+  useDeferredGSAP(
     () => {
       const root = rootRef.current;
       if (!root) return;
@@ -117,7 +118,7 @@ export default function Works() {
         };
       });
     },
-    { scope: rootRef },
+    rootRef,
   );
 
   // Tilt 3D + parallax interno da imagem seguindo o cursor. Só escreve custom properties

@@ -14,6 +14,7 @@ import {
 import { FLUID_VERTEX } from './shaders/fluid.vert';
 import { fluidFragment } from './shaders/fluid.frag';
 import { COVERAGE_FRAGMENT, COVERAGE_VERTEX } from './shaders/coverage.frag';
+import { linkPrograms } from '@/lib/webgl';
 import styles from './Hero.module.scss';
 
 const MOVE_WINDOW = 120; // ms — só gira a cor se houve movimento recente
@@ -29,6 +30,8 @@ type Props = {
   loop: HeroLoop;
   /** Quadro único e estático: o canvas é recriado quando a preferência muda. */
   reducedMotion: boolean;
+  /** Chamado quando o fluido está pronto ou quando se sabe que ele não vai existir (sem WebGL). */
+  onSettled: () => void;
 };
 
 type FluidEngine = {
@@ -36,50 +39,20 @@ type FluidEngine = {
   destroy(): void;
 };
 
-function compile(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error('[FluidCanvas] shader:', gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
-function link(gl: WebGLRenderingContext, vertex: string, fragment: string): WebGLProgram | null {
-  const vs = compile(gl, gl.VERTEX_SHADER, vertex);
-  const fs = compile(gl, gl.FRAGMENT_SHADER, fragment);
-  const prog = gl.createProgram();
-  if (!vs || !fs || !prog) return null;
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.bindAttribLocation(prog, 0, 'aPos'); // os dois programas usam o mesmo buffer
-  gl.bindAttribLocation(prog, 1, 'aUv');
-  gl.linkProgram(prog);
-  gl.deleteShader(vs);
-  gl.deleteShader(fs);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.error('[FluidCanvas] link:', gl.getProgramInfoLog(prog));
-    gl.deleteProgram(prog);
-    return null;
-  }
-  return prog;
-}
-
 function createFluidEngine(
   host: HTMLElement,
   pointer: RefObject<Pointer>,
   cov: Coverage,
   staticOnly: boolean,
+  onReady: (ok: boolean) => void,
 ): FluidEngine | null {
   const octaves = window.matchMedia('(pointer: coarse)').matches ? 5 : 6;
 
   // Canvas novo a cada montagem: no Strict Mode a 2ª montagem não pega o contexto já liberado.
   const canvas = document.createElement('canvas');
   canvas.className = styles.hero__canvas;
+  // Sem alpha, ele é preto até o 1º quadro: só aparece com os shaders prontos.
+  canvas.style.visibility = 'hidden';
   host.appendChild(canvas);
   const gl = canvas.getContext('webgl', {
     alpha: false,
@@ -115,11 +88,11 @@ function createFluidEngine(
   let trailInBuffer = false;
   let maskVersion = -1;
   let maskReady = false;
+  let cancelLink = () => {};
 
-  const setup = (): boolean => {
-    fluidProg = link(gl, FLUID_VERTEX, fluidFragment(octaves));
-    maskProg = link(gl, COVERAGE_VERTEX, COVERAGE_FRAGMENT);
-    if (!fluidProg || !maskProg) return false;
+  const configure = (fluid: WebGLProgram, mask: WebGLProgram) => {
+    fluidProg = fluid;
+    maskProg = mask;
 
     buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -129,12 +102,12 @@ function createFluidEngine(
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0);
     gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 16, 8);
 
-    uTime = gl.getUniformLocation(fluidProg, 'uTime');
-    uRes = gl.getUniformLocation(fluidProg, 'uRes');
-    uMouse = gl.getUniformLocation(fluidProg, 'uMouse');
-    uShift = gl.getUniformLocation(fluidProg, 'uShift');
-    uMaskRes = gl.getUniformLocation(maskProg, 'uRes');
-    uMode = gl.getUniformLocation(maskProg, 'uMode');
+    uTime = gl.getUniformLocation(fluid, 'uTime');
+    uRes = gl.getUniformLocation(fluid, 'uRes');
+    uMouse = gl.getUniformLocation(fluid, 'uMouse');
+    uShift = gl.getUniformLocation(fluid, 'uShift');
+    uMaskRes = gl.getUniformLocation(mask, 'uRes');
+    uMode = gl.getUniformLocation(mask, 'uMode');
 
     maskTex = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0);
@@ -144,8 +117,8 @@ function createFluidEngine(
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA, 1, 1, 0, gl.ALPHA, gl.UNSIGNED_BYTE, null);
-    gl.useProgram(maskProg);
-    gl.uniform1i(gl.getUniformLocation(maskProg, 'uMask'), 0);
+    gl.useProgram(mask);
+    gl.uniform1i(gl.getUniformLocation(mask, 'uMask'), 0);
 
     gl.clearColor(1, 1, 1, 1); // fora das regiões visíveis: branco (igual à tinta por cima)
     gl.clearStencil(0);
@@ -154,13 +127,23 @@ function createFluidEngine(
     trailInBuffer = false;
     maskVersion = -1;
     maskReady = false;
-    return true;
   };
 
-  if (!setup()) {
-    canvas.remove();
-    return null;
-  }
+  const setup = (done: (ok: boolean) => void) => {
+    const attribs = ['aPos', 'aUv']; // os dois programas usam o mesmo buffer
+    cancelLink = linkPrograms(
+      gl,
+      'FluidCanvas',
+      [
+        { vertex: FLUID_VERTEX, fragment: fluidFragment(octaves), attribs },
+        { vertex: COVERAGE_VERTEX, fragment: COVERAGE_FRAGMENT, attribs },
+      ],
+      (programs) => {
+        if (programs) configure(programs[0], programs[1]);
+        done(!!programs);
+      },
+    );
+  };
 
   const t0 = performance.now();
   const cur = { x: -1000, y: -1000 }; // posição suavizada do brilho
@@ -342,6 +325,7 @@ function createFluidEngine(
   };
 
   const resize = () => {
+    if (!fluidProg || !maskProg) return; // shaders ainda compilando: roda quando ficarem prontos
     const ratio = fluidPixelRatio();
     cssW = Math.max(1, canvas.clientWidth);
     cssH = Math.max(1, canvas.clientHeight);
@@ -364,14 +348,25 @@ function createFluidEngine(
 
   const onLost = (e: Event) => {
     e.preventDefault(); // permite o "restored"
+    cancelLink();
     fluidProg = null;
     maskProg = null;
   };
   const onRestored = () => {
-    if (setup()) resize();
+    setup((ok) => {
+      if (ok) resize();
+    });
   };
 
-  resize(); // 1 quadro inicial em tela cheia (serve de quadro estático no reduced motion)
+  setup((ok) => {
+    if (ok) {
+      resize(); // 1 quadro inicial em tela cheia (serve de quadro estático no reduced motion)
+      canvas.style.visibility = '';
+    } else {
+      canvas.remove();
+    }
+    onReady(ok);
+  });
   const ro = new ResizeObserver(([entry]) => {
     const { width, height } = entry.contentRect;
     if (width === cssW && height === cssH) return;
@@ -389,6 +384,7 @@ function createFluidEngine(
       lastFrameAt = now;
     },
     destroy() {
+      cancelLink();
       window.clearTimeout(resizeTimer);
       cancelAnimationFrame(staticRaf);
       ro.disconnect();
@@ -408,17 +404,24 @@ function createFluidEngine(
   };
 }
 
-export default function FluidCanvas({ pointer, coverage, loop, reducedMotion }: Props) {
+export default function FluidCanvas({ pointer, coverage, loop, reducedMotion, onSettled }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
+  // Gradiente iridescente estático só quando o fluido não vai existir (sem WebGL ou shader falhou).
+  // Não pode ser o estado inicial: a classe iria no HTML do servidor e o gradiente piscaria em
+  // tela cheia no F5, antes de a tinta branca montar por cima.
   const [fallback, setFallback] = useState(false);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     const staticOnly = reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const engine = createFluidEngine(host, pointer, coverage, staticOnly);
+    const engine = createFluidEngine(host, pointer, coverage, staticOnly, (ok) => {
+      if (!ok) setFallback(true);
+      onSettled();
+    });
     if (!engine) {
-      setFallback(true); // sem WebGL: gradiente iridescente estático (a tinta continua por cima)
+      setFallback(true);
+      onSettled();
       return;
     }
     const remove = loop.add(engine.frame, 1); // depois da tinta: usa o rastro deste frame
@@ -426,7 +429,7 @@ export default function FluidCanvas({ pointer, coverage, loop, reducedMotion }: 
       remove();
       engine.destroy();
     };
-  }, [pointer, coverage, loop, reducedMotion]);
+  }, [pointer, coverage, loop, reducedMotion, onSettled]);
 
   const className = fallback ? `${styles.hero__fluid} ${styles['hero__fluid--fallback']}` : styles.hero__fluid;
   return <div ref={hostRef} className={className} aria-hidden="true" data-hero-layer="fluid" />;

@@ -16,10 +16,13 @@
 }
 
 // ---- Entrada: cada texto sobe de dentro de uma máscara ----
-// Antes do JS assumir, os textos já nascem escondidos (sem piscar visíveis no primeiro paint).
+// Antes do JS assumir, os textos nascem imperceptíveis (sem piscar visíveis no primeiro paint).
+// Opacidade, não translate para fora da máscara, e não 0: o Chrome descarta do LCP o texto que está
+// invisível na 1ª pintura e não o reconsidera depois. Sem isso o Lighthouse dá NO_LCP (o nome é
+// canvas e o H1 é sr-only, então estes textos são os únicos candidatos). O GSAP assume ao hidratar.
 @media (prefers-reduced-motion: no-preference) {
   .hero[data-intro='pending'] [data-hero-intro] {
-    transform: translateY(130%); // igual ao yPercent inicial do GSAP (Hero.tsx)
+    opacity: 0.01;
   }
 }
 

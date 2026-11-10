@@ -2,7 +2,8 @@
 
 import { useRef } from 'react';
 import Link from 'next/link';
-import { gsap, MOTION_OK, useGSAP } from '@/lib/gsap';
+import { gsap, MOTION_OK } from '@/lib/gsap';
+import { useDeferredGSAP } from '@/hooks/useDeferredGSAP';
 import SplitHeading from '@/components/ui/SplitHeading';
 import SparkButton from '@/components/ui/SparkButton';
 import { site, whatsappUrl } from '@/lib/site';
@@ -17,7 +18,7 @@ const SOCIALS = [
 export default function Contact() {
   const rootRef = useRef<HTMLElement>(null);
 
-  useGSAP(
+  useDeferredGSAP(
     () => {
       const mm = gsap.matchMedia();
       mm.add(MOTION_OK, () => {
@@ -31,7 +32,7 @@ export default function Contact() {
         });
       });
     },
-    { scope: rootRef },
+    rootRef,
   );
 
   return (

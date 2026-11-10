@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { archivoBlack, heading, spaceGrotesk } from '@/lib/fonts';
 import { site } from '@/lib/site';
 import SmoothScroll from '@/components/providers/SmoothScroll';
-import FxCanvas from '@/components/fx/FxCanvas';
+import LazyFxCanvas from '@/components/fx/LazyFxCanvas';
 import BackToTop from '@/components/ui/BackToTop';
 import WhatsAppButton from '@/components/ui/WhatsAppButton';
 import './globals.scss';
@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {children}
         <BackToTop />
         <WhatsAppButton />
-        <FxCanvas />
+        <LazyFxCanvas />
       </body>
     </html>
   );

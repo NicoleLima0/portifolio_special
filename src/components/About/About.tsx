@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef } from 'react';
-import { gsap, MOTION_OK, ScrollTrigger, SplitText, useGSAP } from '@/lib/gsap';
+import { gsap, MOTION_OK, ScrollTrigger, SplitText } from '@/lib/gsap';
+import { useDeferredGSAP } from '@/hooks/useDeferredGSAP';
 import { fx } from '@/components/fx/fxStore';
 import AboutFlair from './AboutFlair';
 import styles from './About.module.scss';
@@ -64,7 +65,7 @@ const LIT = '#ffffff';
 export default function About() {
   const rootRef = useRef<HTMLElement>(null);
 
-  useGSAP(
+  useDeferredGSAP(
     () => {
       const mm = gsap.matchMedia();
 
@@ -314,7 +315,7 @@ export default function About() {
         };
       });
     },
-    { scope: rootRef },
+    rootRef,
   );
 
   return (

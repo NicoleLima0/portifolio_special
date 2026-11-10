@@ -28,6 +28,7 @@ export default function Hero() {
   const letters = useRef<IntroLetter[]>(Array.from(HERO_WORD, () => ({ p: 0 })));
   const introRef = useRef<ReturnType<typeof gsap.timeline> | null>(null);
   const nameReadyRef = useRef(false);
+  const fluidReadyRef = useRef(false);
 
   useGSAP(
     () => {
@@ -58,7 +59,7 @@ export default function Hero() {
         // O fromTo já aplicou o estado inicial inline: o CSS de "pendente" pode sair.
         root.removeAttribute('data-intro');
         introRef.current = intro;
-        if (nameReadyRef.current) intro.play();
+        if (nameReadyRef.current && fluidReadyRef.current) intro.play();
 
         return () => {
           introRef.current = null;
@@ -68,11 +69,19 @@ export default function Hero() {
     { scope: rootRef },
   );
 
-  // A entrada do nome só toca quando a fonte carregou (o timeline já pode existir antes disso).
+  // A entrada só toca com a fonte carregada e o fluido pronto: os shaders compilam em segundo plano
+  // e, sem eles, as letras subiriam sem nada por trás. O timeline já pode existir antes disso.
+  const playIfReady = useCallback(() => {
+    if (nameReadyRef.current && fluidReadyRef.current) introRef.current?.play();
+  }, []);
   const onNameReady = useCallback(() => {
     nameReadyRef.current = true;
-    introRef.current?.play();
-  }, []);
+    playIfReady();
+  }, [playIfReady]);
+  const onFluidReady = useCallback(() => {
+    fluidReadyRef.current = true;
+    playIfReady();
+  }, [playIfReady]);
 
   return (
     <section
@@ -84,7 +93,7 @@ export default function Hero() {
       data-hero-root
     >
       <noscript>
-        <style>{'[data-hero-intro]{transform:none!important}'}</style>
+        <style>{'[data-hero-intro]{opacity:1!important}'}</style>
       </noscript>
 
       {/* O nome do hero é pintado em canvas, então o H1 — o que o Google lê como assunto
@@ -93,7 +102,13 @@ export default function Hero() {
         Nicole Lima — desenvolvedora de sites, landing pages e sistemas sob medida
       </h1>
 
-      <FluidCanvas pointer={pointer} coverage={coverage} loop={loop} reducedMotion={reducedMotion} />
+      <FluidCanvas
+        pointer={pointer}
+        coverage={coverage}
+        loop={loop}
+        reducedMotion={reducedMotion}
+        onSettled={onFluidReady}
+      />
       <InkCanvas
         pointer={pointer}
         letters={letters}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState, type CSSProperties, type MouseEvent } from 'react';
-import { gsap, MOTION_OK, ScrollTrigger, useGSAP } from '@/lib/gsap';
+import { gsap, MOTION_OK, ScrollTrigger } from '@/lib/gsap';
+import { useDeferredGSAP } from '@/hooks/useDeferredGSAP';
 import { fx } from '@/components/fx/fxStore';
 import { SERVICES } from '@/lib/services';
 import styles from './Services.module.scss';
@@ -13,7 +14,7 @@ export default function Services() {
   // Estado de UI (qual item está aberto): muda só em hover/tap, nunca por frame.
   const [open, setOpen] = useState(-1);
 
-  useGSAP(
+  useDeferredGSAP(
     () => {
       const root = rootRef.current;
       if (!root) return;
@@ -48,7 +49,7 @@ export default function Services() {
         fx.preview.active = false;
       };
     },
-    { scope: rootRef },
+    rootRef,
   );
 
   const canHover = () => window.matchMedia(HOVER).matches;
